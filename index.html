@@ -9,9 +9,6 @@
     <style>
         body { font-family: 'Hind Siliguri', sans-serif; background-color: #f3f4f6; }
     </style>
-
-    <!-- Social Bar Script (আপনার অ্যাডস্টারার/মনিট্যাগ সোশ্যালবার কোড থাকলে এখানে বসাবেন) -->
-    <!-- <script type="text/javascript" src="your-social-bar-script-url.js"></script> -->
 </head>
 <body class="bg-gray-100 text-gray-800">
 
@@ -135,7 +132,6 @@
             storyList.innerHTML = html;
         }
 
-        // View Story with Facebook Feed-like Scrollable Parts, Ad Sidebars & Locks
         window.viewStory = async function(storyId) {
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `<div class="text-center py-10">গল্প লোড হচ্ছে...</div>`;
@@ -182,16 +178,13 @@
                                 if(b.type === 'text') {
                                     blocksHtml += `<div class="text-lg whitespace-pre-line text-gray-800 mb-4 leading-relaxed">${b.value}</div>`;
                                 } else if(b.type === 'image') {
-                                    // Image with side/bottom Banner Ad Layout
                                     blocksHtml += `
                                         <div class="my-4 flex flex-col md:flex-row gap-3 items-center">
                                             <div class="flex-grow w-full">
                                                 <img src="${b.value}" class="w-full rounded-xl shadow border" alt="গল্পের ছবি">
                                             </div>
-                                            <!-- Image Side/Bottom Ad Box -->
                                             <div class="w-full md:w-48 bg-gray-50 border border-dashed rounded-xl p-2 text-center text-xs text-gray-400 flex flex-col items-center justify-center min-h-[100px]">
                                                 <span>📢 বিজ্ঞাপন</span>
-                                                <!-- আপনার ব্যানার বা সোশ্যালবার অ্যাড এখানে শো করবে -->
                                             </div>
                                         </div>
                                     `;
@@ -202,7 +195,6 @@
                         }
                         feedHtml += `<div>${blocksHtml}</div>`;
                     } else {
-                        // Locked Part Section
                         feedHtml += `
                             <div class="text-center py-6 bg-gray-50 rounded-xl border border-dashed p-4">
                                 <h4 class="text-lg font-bold text-red-600 mb-2">🔒 পরবর্তী পার্টটি লক করা আছে</h4>
@@ -237,7 +229,6 @@
             });
         }
 
-        // 3-Step Monetag Direct Link Handler
         window.completeAdStep = function(step, storyId, partId) {
             let adUrl = "";
             if(step === 1) adUrl = "https://uplcm.com/4/12022509";
@@ -270,7 +261,6 @@
             viewStory(storyId);
         }
 
-        // Admin Section
         window.openAdminLogin = function() {
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `
@@ -318,7 +308,7 @@
                         <input type="text" id="partTitle" placeholder="পার্টের শিরোনাম (ঐচ্ছিক)" class="w-full p-2 border rounded mb-4">
 
                         <div class="border-t pt-3 mb-3">
-                            <h4 class="font-semibold text-sm mb-2 text-gray-700">গল্পের কনটেন্ট সাজান (একাধিক লেখা ও ছবি):</h4>
+                            <h4 class="font-semibold text-sm mb-2 text-gray-700">গল্পের কনটেন্ট সাজান (লেখা ও ছবি):</h4>
                             <div id="blocksContainer" class="space-y-3 mb-3"></div>
                             
                             <div class="flex gap-2">
@@ -370,13 +360,13 @@
             div.id = `block_${window.blockCount}`;
             div.innerHTML = `
                 <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
-                    <span>🖼️ ছবি ব্লক (গ্যালারি থেকে সিলেক্ট করুন)</span>
+                    <span>🖼️ ছবি সিলেক্ট করুন (গ্যালারি থেকে)</span>
                     <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
                 </div>
                 <input type="file" accept="image/*" onchange="handleImageUpload(event, '${window.blockCount}')" class="w-full text-sm border p-2 rounded bg-gray-50">
                 <input type="hidden" id="img_val_${window.blockCount}" class="block-value">
                 <div id="preview_${window.blockCount}" class="hidden mt-2">
-                    <img src="" class="max-h-40 rounded shadow border">
+                    <img src="" class="max-h-40 rounded shadow border mx-auto">
                 </div>
             `;
             container.appendChild(div);
@@ -428,7 +418,7 @@
             });
 
             if(blocks.length === 0) {
-                alert('কমপক্ষে একটি লেখা বা ছবি যোগ করুন!');
+                alert('কমপক্ষে একটি লেখা বা ছবি সিলেক্ট করুন!');
                 return;
             }
 
@@ -439,7 +429,7 @@
                     blocks: blocks,
                     createdAt: new Date()
                 });
-                alert('পার্ট সফলভাবে পোস্ট করা হয়েছে!');
+                alert('সফলভাবে ছবিসহ পার্ট পোস্ট করা হয়েছে!');
                 window.loadAdminDashboard();
             } catch(e) {
                 alert('ত্রুটি: ' + e.message);
