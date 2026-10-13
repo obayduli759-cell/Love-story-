@@ -1,66 +1,69 @@
-
 <!DOCTYPE html>
 <html lang="bn">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Love Story - বাংলা গল্প</title>
+  <meta name="theme-color" content="#7c3aed">
+  <title>বাংলা গল্প | Love Story</title>
   <style>
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #fff5f7;
-      color: #34202a;
+      background: #f8f7fc;
+      color: #28243a;
+      line-height: 1.8;
     }
     header {
-      background: #c2185b;
+      background: #6d28d9;
       color: white;
+      padding: 22px 16px;
       text-align: center;
-      padding: 28px 12px;
     }
-    header h1 { margin: 0 0 8px; }
-    main {
-      max-width: 700px;
-      margin: 25px auto;
-      padding: 18px;
-    }
-    .welcome {
+    header h1 { margin: 0; font-size: 27px; }
+    header p { margin: 5px 0 0; }
+    main { max-width: 760px; margin: auto; padding: 18px; }
+    .welcome, .stories {
       background: white;
-      padding: 22px;
       border-radius: 14px;
-      box-shadow: 0 3px 12px #00000010;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 3px 14px #0000000c;
     }
-    .story {
-      background: white;
+    .stories h2, .welcome h2 { margin-top: 0; }
+    .empty {
       padding: 18px;
-      margin-top: 18px;
-      border-radius: 12px;
+      text-align: center;
+      background: #f4efff;
+      border-radius: 10px;
     }
     footer {
       text-align: center;
-      padding: 25px;
-      color: #765966;
+      padding: 22px;
+      color: #777;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>❤️ Love Story ❤️</h1>
-    <p>তোমার প্রিয় বাংলা গল্পের ঠিকানা</p>
+    <h1>📚 বাংলা গল্প</h1>
+    <p>আপনার পছন্দের গল্প পড়ুন</p>
   </header>
 
   <main>
     <section class="welcome">
       <h2>গল্পের জগতে স্বাগতম!</h2>
-      <p>এখানে তুমি রোমান্টিক গল্প ও ধারাবাহিকের পর্ব পড়তে পারবে।</p>
+      <p>প্রেম, রহস্য, সামাজিক ও অনুপ্রেরণামূলক গল্পের জন্য আমাদের সঙ্গে থাকুন।</p>
     </section>
 
-    <section class="story">
-      <h2>আমাদের গল্পের যাত্রা শুরু</h2>
-      <p>নতুন গল্প খুব শিগগিরই এখানে প্রকাশিত হবে।</p>
+    <section class="stories">
+      <h2>সকল গল্প</h2>
+      <div class="empty">
+        গল্পের তালিকা Firebase সংযোগের পর এখানে দেখানো হবে।
+      </div>
     </section>
   </main>
 
-  <footer>© Love Story</footer>
+  <footer>© বাংলা গল্প</footer>
 </body>
 </html>
