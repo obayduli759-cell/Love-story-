@@ -10,7 +10,7 @@
         body { font-family: 'Hind Siliguri', sans-serif; background-color: #f3f4f6; }
     </style>
 
-    <!-- Social Bar / Banner Ad Script (সাইটে সবসময় রান করার জন্য এখানে আপনার অ্যাডস্টারার সোশ্যালবার কোড বসাবেন) -->
+    <!-- Social Bar / Banner Ad Script (এখানে আপনার মনিট্যাগ বা অ্যাডস্টারার সোশ্যালবার কোড বসাতে পারেন) -->
     <!-- <script type="text/javascript" src="your-social-bar-script-url.js"></script> -->
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -78,7 +78,7 @@
 
         // Load Home Page
         window.loadHome = async function() {
-            window.history.pushState({}, '', window.location.pathname); // clear query params
+            window.history.pushState({}, '', window.location.pathname);
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `<h2 class="text-lg font-bold mb-3">সকল গল্প</h2><div id="storyList" class="space-y-3">লোড হচ্ছে...</div>`;
             
@@ -194,7 +194,7 @@
             navigator.clipboard.writeText(shareUrl).then(() => {
                 alert('পার্টের ডাইরেক্ট লিংক কপি করা হয়েছে! এটি এখন সোশ্যাল মিডিয়ায় শেয়ার করতে পারবেন।');
             }).catch(err => {
-                alert('লিংক কপি করতে সমস্যা হয়েছে:𒇻 ' + err);
+                alert('লিংক কপি করতে সমস্যা হয়েছে: ' + err);
             });
         }
 
@@ -221,8 +221,18 @@
             }
         }
 
+        // 3-Step Monetag Direct Link Handler
         window.completeAdStep = function(step, storyId, partId) {
-            let adUrl = "https://google.com"; // আপনার অ্যাডস্টারার ডাইরেক্ট লিংক এখানে বসাবেন
+            let adUrl = "";
+            
+            if(step === 1) {
+                adUrl = "https://uplcm.com/4/12022509"; // প্রথম অ্যাড
+            } else if(step === 2) {
+                adUrl = "https://uplcm.com/4/12022506"; // দ্বিতীয় অ্যাড
+            } else if(step === 3) {
+                adUrl = "https://uplcm.com/4/12022516"; // তৃতীয় অ্যাড
+            }
+
             window.open(adUrl, '_blank');
 
             const btn = document.getElementById(`adBtn${step}`);
@@ -251,7 +261,7 @@
 
         async function fetchAndRenderPartContent(storyId, partId) {
             const contentArea = document.getElementById('contentArea');
-            contentArea.innerHTML = `<div class="text-center py-10">গল্প লোড হচ্ছে...`;
+            contentArea.innerHTML = `<div class="text-center py-10">গল্প লোড হচ্ছে...</div>`;
             try {
                 const partDoc = await getDoc(doc(db, "stories", storyId, "parts", partId));
                 const partData = partDoc.data();
