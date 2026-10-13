@@ -9,6 +9,9 @@
     <style>
         body { font-family: 'Hind Siliguri', sans-serif; background-color: #f3f4f6; }
     </style>
+
+    <!-- Social Bar / Banner Ad Script (সাইটে সবসময় রান করার জন্য এখানে আপনার অ্যাডস্টারার সোশ্যালবার কোড বসাবেন) -->
+    <!-- <script type="text/javascript" src="your-social-bar-script-url.js"></script> -->
 </head>
 <body class="bg-gray-100 text-gray-800">
 
@@ -58,8 +61,24 @@
         let allStories = [];
         window.blockCount = 0;
 
+        // Check URL parameters on load to see if a direct part link was opened
+        window.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const storyId = urlParams.get('story');
+            const partId = urlParams.get('part');
+
+            if (storyId && partId) {
+                // Automatically unlock this specific part when coming from a shared link
+                localStorage.setItem(`unlocked_${partId}`, 'true');
+                await fetchAndRenderPartContent(storyId, partId);
+            } else {
+                loadHome();
+            }
+        });
+
         // Load Home Page
         window.loadHome = async function() {
+            window.history.pushState({}, '', window.location.pathname); // clear query params
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `<h2 class="text-lg font-bold mb-3">সকল গল্প</h2><div id="storyList" class="space-y-3">লোড হচ্ছে...</div>`;
             
@@ -122,6 +141,7 @@
 
         // View Story Details & Parts
         window.viewStory = async function(storyId) {
+            window.history.pushState({}, '', window.location.pathname);
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `<div class="text-center py-10">গল্পের পার্ট লোড হচ্ছে...</div>`;
 
@@ -139,11 +159,17 @@
                     partsHtml = `<p class="text-gray-500">এই গল্পের এখনো কোনো পার্ট প্রকাশ করা হয়নি।</p>`;
                 } else {
                     parts.forEach(p => {
+                        const isUnlocked = (p.partNumber === 1 || localStorage.getItem(`unlocked_${p.id}`) === 'true');
                         partsHtml += `
-                            <button onclick="readPart('${storyId}', '${p.id}', ${p.partNumber})" class="w-full text-left bg-white p-3 rounded-lg shadow-sm border hover:border-red-500 flex justify-between items-center mb-2">
-                                <span class="font-bold">Part ${p.partNumber}: ${p.title || ''}</span>
-                                <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded font-semibold">${p.partNumber === 1 ? 'ফ্রি' : 'লকড / বিজ্ঞাপন'}</span>
-                            </button>
+                            <div class="w-full bg-white p-3 rounded-lg shadow-sm border hover:border-red-500 flex justify-between items-center mb-2">
+                                <span class="font-bold cursor-pointer flex-grow" onclick="readPart('${storyId}', '${p.id}', ${p.partNumber})">Part ${p.partNumber}: ${p.title || ''}</span>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="sharePartLink('${storyId}', '${p.id}')" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded font-semibold hover:bg-gray-200" title="লিংক কপি করুন">🔗 শেয়ার</button>
+                                    <span class="text-xs ${isUnlocked ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'} px-2 py-1 rounded font-semibold cursor-pointer" onclick="readPart('${storyId}', '${p.id}', ${p.partNumber})">
+                                        ${isUnlocked ? 'পড়ুন' : '🔒 লকড'}
+                                    </span>
+                                </div>
+                            </div>
                         `;
                     });
                 }
@@ -162,9 +188,20 @@
             }
         }
 
-        // Read Part Logic with Multi-block rendering
+        // Share Part Link Function
+        window.sharePartLink = function(storyId, partId) {
+            const shareUrl = `${window.location.origin}${window.location.pathname}?story=${storyId}&part=${partId}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert('পার্টের ডাইরেক্ট লিংক কপি করা হয়েছে! এটি এখন সোশ্যাল মিডিয়ায় শেয়ার করতে পারবেন।');
+            }).catch(err => {
+                alert('লিংক কপি করতে সমস্যা হয়েছে:𒇻 ' + err);
+            });
+        }
+
+        // Read Part Logic with 3 Ad Unlocking Steps
         window.readPart = async function(storyId, partId, partNumber) {
             const contentArea = document.getElementById('contentArea');
+            
             if(partNumber === 1 || localStorage.getItem(`unlocked_${partId}`) === 'true') {
                 fetchAndRenderPartContent(storyId, partId);
             } else {
@@ -174,9 +211,9 @@
                         <h2 class="text-xl font-bold text-red-600 mb-2">🔒 এই পার্টটি লক করা আছে</h2>
                         <p class="text-sm text-gray-600 mb-4">এই পার্টটি পড়তে নিচের ৩টি বিজ্ঞাপনের ধাপ সম্পন্ন করুন:</p>
                         <div class="space-y-3 mb-6">
-                            <button onclick="completeAdStep(1)" id="adBtn1" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold">বিজ্ঞাপন ১ খুলুন</button>
-                            <button onclick="completeAdStep(2)" id="adBtn2" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ২ খুলুন</button>
-                            <button onclick="completeAdStep(3)" id="adBtn3" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ৩ খুলুন</button>
+                            <button onclick="completeAdStep(1, '${storyId}', '${partId}')" id="adBtn1" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold">বিজ্ঞাপন ১ খুলুন</button>
+                            <button onclick="completeAdStep(2, '${storyId}', '${partId}')" id="adBtn2" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ২ খুলুন</button>
+                            <button onclick="completeAdStep(3, '${storyId}', '${partId}')" id="adBtn3" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ৩ খুলুন</button>
                         </div>
                         <button onclick="unlockPart('${storyId}', '${partId}')" id="unlockFinalBtn" class="w-full bg-green-600 text-white p-3 rounded-lg font-bold opacity-50 cursor-not-allowed" disabled>পার্ট আনলক করুন</button>
                     </div>
@@ -184,21 +221,26 @@
             }
         }
 
-        window.completeAdStep = function(step) {
-            window.open('https://google.com', '_blank');
+        window.completeAdStep = function(step, storyId, partId) {
+            let adUrl = "https://google.com"; // আপনার অ্যাডস্টারার ডাইরেক্ট লিংক এখানে বসাবেন
+            window.open(adUrl, '_blank');
+
             const btn = document.getElementById(`adBtn${step}`);
             btn.classList.add('bg-green-600');
-            btn.innerText = `বিজ্ঞাপন ${step} সম্পন্ন হয়েছে ✓`;
+            btn.innerText = `বিজ্ঞাপন ${step} সম্পন্ন হয়েছে ✓`;
 
             if(step === 1) {
-                document.getElementById('adBtn2').classList.remove('opacity-50', 'cursor-not-allowed');
-                document.getElementById('adBtn2').removeAttribute('disabled');
+                const next = document.getElementById('adBtn2');
+                next.classList.remove('opacity-50', 'cursor-not-allowed');
+                next.removeAttribute('disabled');
             } else if(step === 2) {
-                document.getElementById('adBtn3').classList.remove('opacity-50', 'cursor-not-allowed');
-                document.getElementById('adBtn3').removeAttribute('disabled');
+                const next = document.getElementById('adBtn3');
+                next.classList.remove('opacity-50', 'cursor-not-allowed');
+                next.removeAttribute('disabled');
             } else if(step === 3) {
-                document.getElementById('unlockFinalBtn').classList.remove('opacity-50', 'cursor-not-allowed');
-                document.getElementById('unlockFinalBtn').removeAttribute('disabled');
+                const finalBtn = document.getElementById('unlockFinalBtn');
+                finalBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                finalBtn.removeAttribute('disabled');
             }
         }
 
@@ -209,7 +251,7 @@
 
         async function fetchAndRenderPartContent(storyId, partId) {
             const contentArea = document.getElementById('contentArea');
-            contentArea.innerHTML = `<div class="text-center py-10">গল্প লোড হচ্ছে...</div>`;
+            contentArea.innerHTML = `<div class="text-center py-10">গল্প লোড হচ্ছে...`;
             try {
                 const partDoc = await getDoc(doc(db, "stories", storyId, "parts", partId));
                 const partData = partDoc.data();
@@ -314,7 +356,6 @@
                 });
             } catch(e) { console.error(e); }
 
-            // Default first text block
             window.addTextBlock();
         }
 
@@ -401,8 +442,6 @@
                 alert('ত্রুটি: ' + e.message);
             }
         }
-
-        loadHome();
     </script>
 </body>
 </html>
