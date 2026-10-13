@@ -38,8 +38,8 @@
     <!-- Firebase Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, getDoc, addDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyBlPLnL20HL5iypBFBilJe9wP02B6CnJNA",
@@ -56,8 +56,9 @@
         const auth = getAuth(app);
 
         let allStories = [];
+        window.blockCount = 0;
 
-        // Load Home Page & Stories
+        // Load Home Page
         window.loadHome = async function() {
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `<h2 class="text-lg font-bold mb-3">সকল গল্প</h2><div id="storyList" class="space-y-3">লোড হচ্ছে...</div>`;
@@ -77,7 +78,7 @@
                         <div class="bg-white p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition flex justify-between items-center" onclick="viewStory('${story.id}')">
                             <div>
                                 <h3 class="font-bold text-lg text-red-600">${story.title || 'নামবিহীন গল্প'}</h3>
-                                <p class="text-sm text-gray-600 mt-1">ক্যাটাগরি: ${story.category || 'সাধারণ'} | পার্ট সংখ্যা: ${story.totalParts || 1}</p>
+                                <p class="text-sm text-gray-600 mt-1">ক্যাটাগরি: ${story.category || 'সাধারণ'}</p>
                             </div>
                             <span class="text-sm text-red-500 font-semibold">পড়ুন &rarr;</span>
                         </div>
@@ -131,8 +132,6 @@
                 const partsSnap = await getDocs(collection(db, "stories", storyId, "parts"));
                 let parts = [];
                 partsSnap.forEach(p => parts.push({ id: p.id, ...p.data() }));
-                
-                // Sort parts by partNumber
                 parts.sort((a, b) => a.partNumber - b.partNumber);
 
                 let partsHtml = "";
@@ -163,52 +162,43 @@
             }
         }
 
-        // Read Part Logic with Ad-Lock
+        // Read Part Logic with Multi-block rendering
         window.readPart = async function(storyId, partId, partNumber) {
             const contentArea = document.getElementById('contentArea');
-            
-            // Part 1 is always free
             if(partNumber === 1 || localStorage.getItem(`unlocked_${partId}`) === 'true') {
                 fetchAndRenderPartContent(storyId, partId);
             } else {
-                // Show Ad Unlock Screen
                 contentArea.innerHTML = `
                     <button onclick="viewStory('${storyId}')" class="text-sm text-red-600 font-bold mb-3">&larr; পার্ট তালিকায় ফিরে যান</button>
                     <div class="bg-white p-6 rounded-xl shadow text-center">
                         <h2 class="text-xl font-bold text-red-600 mb-2">🔒 এই পার্টটি লক করা আছে</h2>
                         <p class="text-sm text-gray-600 mb-4">এই পার্টটি পড়তে নিচের ৩টি বিজ্ঞাপনের ধাপ সম্পন্ন করুন:</p>
                         <div class="space-y-3 mb-6">
-                            <button onclick="completeAdStep(1, '${storyId}', '${partId}')" id="adBtn1" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold">বিজ্ঞাপন ১ খুলুন</button>
-                            <button onclick="completeAdStep(2, '${storyId}', '${partId}')" id="adBtn2" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ২ খুলুন</button>
-                            <button onclick="completeAdStep(3, '${storyId}', '${partId}')" id="adBtn3" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ৩ খুলুন</button>
+                            <button onclick="completeAdStep(1)" id="adBtn1" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold">বিজ্ঞাপন ১ খুলুন</button>
+                            <button onclick="completeAdStep(2)" id="adBtn2" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ২ খুলুন</button>
+                            <button onclick="completeAdStep(3)" id="adBtn3" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ৩ খুলুন</button>
                         </div>
                         <button onclick="unlockPart('${storyId}', '${partId}')" id="unlockFinalBtn" class="w-full bg-green-600 text-white p-3 rounded-lg font-bold opacity-50 cursor-not-allowed" disabled>পার্ট আনলক করুন</button>
                     </div>
                 `;
-                window.adStepsCompleted = { 1: false, 2: false, 3: false };
             }
         }
 
-        window.completeAdStep = function(step, storyId, partId) {
-            window.open('https://example.com/ad-' + step, '_blank'); // Replace with admin ad URL later
-            window.adStepsCompleted[step] = true;
-            
+        window.completeAdStep = function(step) {
+            window.open('https://google.com', '_blank');
             const btn = document.getElementById(`adBtn${step}`);
             btn.classList.add('bg-green-600');
-            btn.innerText = `বিজ্ঞাপন ${step} সম্পন্ন হয়েছে ✓`;
+            btn.innerText = `বিজ্ঞাপন ${step} সম্পন্ন হয়েছে ✓`;
 
             if(step === 1) {
-                const next = document.getElementById('adBtn2');
-                next.classList.remove('opacity-50', 'cursor-not-allowed');
-                next.removeAttribute('disabled');
+                document.getElementById('adBtn2').classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('adBtn2').removeAttribute('disabled');
             } else if(step === 2) {
-                const next = document.getElementById('adBtn3');
-                next.classList.remove('opacity-50', 'cursor-not-allowed');
-                next.removeAttribute('disabled');
+                document.getElementById('adBtn3').classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('adBtn3').removeAttribute('disabled');
             } else if(step === 3) {
-                const finalBtn = document.getElementById('unlockFinalBtn');
-                finalBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                finalBtn.removeAttribute('disabled');
+                document.getElementById('unlockFinalBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('unlockFinalBtn').removeAttribute('disabled');
             }
         }
 
@@ -219,16 +209,29 @@
 
         async function fetchAndRenderPartContent(storyId, partId) {
             const contentArea = document.getElementById('contentArea');
-            contentArea.innerHTML = `<div class="text-center py-10">লেখা লোড হচ্ছে...</div>`;
+            contentArea.innerHTML = `<div class="text-center py-10">গল্প লোড হচ্ছে...</div>`;
             try {
                 const partDoc = await getDoc(doc(db, "stories", storyId, "parts", partId));
                 const partData = partDoc.data();
 
+                let blocksHtml = "";
+                if(partData.blocks && partData.blocks.length > 0) {
+                    partData.blocks.forEach(b => {
+                        if(b.type === 'text') {
+                            blocksHtml += `<div class="text-lg whitespace-pre-line text-gray-800 mb-4 leading-relaxed">${b.value}</div>`;
+                        } else if(b.type === 'image') {
+                            blocksHtml += `<div class="my-4"><img src="${b.value}" class="w-full rounded-xl shadow border" alt="গল্পের ছবি"></div>`;
+                        }
+                    });
+                } else if(partData.content) {
+                    blocksHtml = `<div class="text-lg whitespace-pre-line text-gray-800 mb-4 leading-relaxed">${partData.content}</div>`;
+                }
+
                 contentArea.innerHTML = `
                     <button onclick="viewStory('${storyId}')" class="text-sm text-red-600 font-bold mb-3">&larr; পার্ট তালিকায় ফিরে যান</button>
-                    <div class="bg-white p-6 rounded-xl shadow leading-relaxed">
+                    <div class="bg-white p-6 rounded-xl shadow">
                         <h2 class="text-2xl font-bold text-red-600 mb-4">Part ${partData.partNumber}: ${partData.title || ''}</h2>
-                        <div class="text-lg whitespace-pre-line text-gray-800">${partData.content || 'কোনো লেখা নেই।'}</div>
+                        <div>${blocksHtml}</div>
                     </div>
                 `;
             } catch(e) {
@@ -236,7 +239,7 @@
             }
         }
 
-        // Admin Login UI
+        // Admin Auth
         window.openAdminLogin = function() {
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `
@@ -261,36 +264,47 @@
             }
         }
 
-        // Admin Dashboard
+        // Admin Dashboard with Multi-Block Editor
         window.loadAdminDashboard = async function() {
+            window.blockCount = 0;
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `
                 <div class="bg-white p-6 rounded-xl shadow mb-4">
                     <h2 class="text-xl font-bold mb-4 text-red-600">অ্যাডমিন ড্যাশবোর্ড</h2>
                     
                     <!-- Create Story -->
-                    <div class="p-4 bg-gray-50 rounded-lg border mb-4">
+                    <div class="p-4 bg-gray-50 rounded-lg border mb-6">
                         <h3 class="font-bold mb-2">নতুন গল্প তৈরি করুন</h3>
                         <input type="text" id="storyTitle" placeholder="গল্পের নাম" class="w-full p-2 border rounded mb-2">
                         <input type="text" id="storyCategory" placeholder="ক্যাটাগরি" class="w-full p-2 border rounded mb-3">
                         <button onclick="window.addNewStory()" class="bg-red-600 text-white px-4 py-2 rounded font-bold">গল্প সংরক্ষণ করুন</button>
                     </div>
 
-                    <!-- Add Part to Story -->
+                    <!-- Add Part with Dynamic Blocks -->
                     <div class="p-4 bg-gray-50 rounded-lg border">
-                        <h3 class="font-bold mb-2">গল্পে নতুন পার্ট যোগ করুন</h3>
+                        <h3 class="font-bold mb-2">গল্পে নতুন পার্ট/পোস্ট যোগ করুন</h3>
                         <select id="selectStoryId" class="w-full p-2 border rounded mb-2">
                             <option value="">গল্প সিলেক্ট করুন</option>
                         </select>
                         <input type="number" id="partNumber" placeholder="পার্ট নম্বর (যেমন: 1, 2, 3)" class="w-full p-2 border rounded mb-2">
-                        <input type="text" id="partTitle" placeholder="পার্টের শিরোনাম (ঐচ্ছিক)" class="w-full p-2 border rounded mb-2">
-                        <textarea id="partContent" rows="5" placeholder="গল্পের লেখা এখানে লিখুন..." class="w-full p-2 border rounded mb-3"></textarea>
-                        <button onclick="window.addNewPart()" class="bg-red-600 text-white px-4 py-2 rounded font-bold">পার্ট সংরক্ষণ করুন</button>
+                        <input type="text" id="partTitle" placeholder="পার্টের শিরোনাম (ঐচ্ছিক)" class="w-full p-2 border rounded mb-4">
+
+                        <!-- Content Blocks Area -->
+                        <div class="border-t pt-3 mb-3">
+                            <h4 class="font-semibold text-sm mb-2 text-gray-700">গল্পের কনটেন্ট সাজান (লেখা ও ছবি):</h4>
+                            <div id="blocksContainer" class="space-y-3 mb-3"></div>
+                            
+                            <div class="flex gap-2">
+                                <button onclick="window.addTextBlock()" class="text-sm bg-blue-100 text-blue-700 px-3 py-2 rounded-lg font-bold">+ লেখা যোগ করুন</button>
+                                <button onclick="window.addImageBlock()" class="text-sm bg-green-100 text-green-700 px-3 py-2 rounded-lg font-bold">+ ছবি যোগ করুন</button>
+                            </div>
+                        </div>
+
+                        <button onclick="window.addNewPartWithBlocks()" class="w-full bg-red-600 text-white px-4 py-3 rounded-lg font-bold mt-4">সম্পূর্ণ পার্ট পোস্ট করুন</button>
                     </div>
                 </div>
             `;
 
-            // Populate story select dropdown
             try {
                 const querySnapshot = await getDocs(collection(db, "stories"));
                 const select = document.getElementById('selectStoryId');
@@ -299,6 +313,43 @@
                     select.innerHTML += `<option value="${docSnap.id}">${data.title}</option>`;
                 });
             } catch(e) { console.error(e); }
+
+            // Default first text block
+            window.addTextBlock();
+        }
+
+        window.addTextBlock = function() {
+            window.blockCount++;
+            const container = document.getElementById('blocksContainer');
+            const div = document.createElement('div');
+            div.className = "p-3 bg-white border rounded-lg flex flex-col gap-2 relative block-item";
+            div.dataset.type = "text";
+            div.id = `block_${window.blockCount}`;
+            div.innerHTML = `
+                <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
+                    <span>📝 টেক্সট ব্লক</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
+                </div>
+                <textarea class="block-value w-full p-2 border rounded text-sm" rows="3" placeholder="লেখার অংশটি লিখুন..."></textarea>
+            `;
+            container.appendChild(div);
+        }
+
+        window.addImageBlock = function() {
+            window.blockCount++;
+            const container = document.getElementById('blocksContainer');
+            const div = document.createElement('div');
+            div.className = "p-3 bg-white border rounded-lg flex flex-col gap-2 relative block-item";
+            div.dataset.type = "image";
+            div.id = `block_${window.blockCount}`;
+            div.innerHTML = `
+                <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
+                    <span>🖼️ ছবি ব্লক (Image URL)</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
+                </div>
+                <input type="text" class="block-value w-full p-2 border rounded text-sm" placeholder="ছবির ডাইরেক্ট লিংক (Image URL) বসান...">
+            `;
+            container.appendChild(div);
         }
 
         window.addNewStory = async function() {
@@ -312,14 +363,28 @@
             } catch(e) { alert('ত্রুটি: ' + e.message); }
         }
 
-        window.addNewPart = async function() {
+        window.addNewPartWithBlocks = async function() {
             const storyId = document.getElementById('selectStoryId').value;
             const partNumber = parseInt(document.getElementById('partNumber').value);
             const title = document.getElementById('partTitle').value;
-            const content = document.getElementById('partContent').value;
 
-            if(!storyId || !partNumber || !content) {
-                alert('গল্প, পার্ট নম্বর এবং লেখা আবশ্যক!');
+            if(!storyId || !partNumber) {
+                alert('গল্প এবং পার্ট নম্বর নির্বাচন করা আবশ্যক!');
+                return;
+            }
+
+            const blockElements = document.querySelectorAll('.block-item');
+            let blocks = [];
+            blockElements.forEach(el => {
+                const type = el.dataset.type;
+                const value = el.querySelector('.block-value').value;
+                if(value.trim() !== '') {
+                    blocks.push({ type, value });
+                }
+            });
+
+            if(blocks.length === 0) {
+                alert('কমপক্ষে একটি লেখা বা ছবি যোগ করুন!');
                 return;
             }
 
@@ -327,19 +392,16 @@
                 await addDoc(collection(db, "stories", storyId, "parts"), {
                     partNumber,
                     title: title || '',
-                    content,
+                    blocks: blocks,
                     createdAt: new Date()
                 });
-                alert('পার্ট সফলভাবে যোগ করা হয়েছে!');
-                document.getElementById('partNumber').value = '';
-                document.getElementById('partTitle').value = '';
-                document.getElementById('partContent').value = '';
+                alert('ছবিসহ পুরো পার্ট সফলভাবে পোস্ট করা হয়েছে!');
+                window.loadAdminDashboard();
             } catch(e) {
                 alert('ত্রুটি: ' + e.message);
             }
         }
 
-        // Initial Load
         loadHome();
     </script>
 </body>
