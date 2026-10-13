@@ -16,7 +16,9 @@
     <header class="bg-white shadow-md sticky top-0 z-50">
         <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
             <h1 class="text-xl font-bold text-red-600 cursor-pointer" onclick="loadHome()">📖 বাংলা গল্প</h1>
-            <button onclick="openAdminLogin()" class="text-sm bg-gray-200 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-300">অ্যাডমিন প্যানেল</button>
+            <div id="headerRight">
+                <button onclick="openAdminLogin()" class="text-sm bg-gray-200 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-300">অ্যাডমিন প্যানেল</button>
+            </div>
         </div>
     </header>
 
@@ -24,7 +26,7 @@
     <main class="max-w-3xl mx-auto p-4 mb-16">
         <!-- Search Bar -->
         <div class="mb-4">
-            <input type="text" id="searchInput" placeholder="গল্পের নাম বা কীওয়ার্ড দিয়ে খুঁজুন..." class="w-full p-3 bg-white border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+            <input type="text" id="searchInput" oninput="handleSearch()" placeholder="গল্পের নাম বা কীওয়ার্ড দিয়ে খুঁজুন..." class="w-full p-3 bg-white border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500">
         </div>
 
         <!-- Content Area -->
@@ -36,8 +38,8 @@
     <!-- Firebase Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, addDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyBlPLnL20HL5iypBFBilJe9wP02B6CnJNA",
@@ -53,25 +55,29 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Global functions
+        let allStories = [];
+
+        // Load Home Page & Stories
         window.loadHome = async function() {
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `<h2 class="text-lg font-bold mb-3">সকল গল্প</h2><div id="storyList" class="space-y-3">লোড হচ্ছে...</div>`;
             
             try {
                 const querySnapshot = await getDocs(collection(db, "stories"));
+                allStories = [];
                 let html = "";
                 if(querySnapshot.empty) {
                     contentArea.innerHTML = `<div class="bg-white p-6 rounded-xl shadow text-center"><p class="text-gray-500">এখনো কোনো গল্প যোগ করা হয়নি।</p></div>`;
                     return;
                 }
                 querySnapshot.forEach((docSnap) => {
-                    const story = docSnap.data();
+                    const story = { id: docSnap.id, ...docSnap.data() };
+                    allStories.push(story);
                     html += `
-                        <div class="bg-white p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition flex justify-between items-center">
+                        <div class="bg-white p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition flex justify-between items-center" onclick="viewStory('${story.id}')">
                             <div>
                                 <h3 class="font-bold text-lg text-red-600">${story.title || 'নামবিহীন গল্প'}</h3>
-                                <p class="text-sm text-gray-600 mt-1">ক্যাটাগরি: ${story.category || 'সাধারণ'}</p>
+                                <p class="text-sm text-gray-600 mt-1">ক্যাটাগরি: ${story.category || 'সাধারণ'} | পার্ট সংখ্যা: ${story.totalParts || 1}</p>
                             </div>
                             <span class="text-sm text-red-500 font-semibold">পড়ুন &rarr;</span>
                         </div>
@@ -84,6 +90,153 @@
             }
         }
 
+        // Search Filter
+        window.handleSearch = function() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allStories.filter(s => 
+                (s.title && s.title.toLowerCase().includes(keyword)) || 
+                (s.category && s.category.toLowerCase().includes(keyword))
+            );
+            const storyList = document.getElementById('storyList');
+            if(!storyList) return;
+            
+            let html = "";
+            if(filtered.length === 0) {
+                storyList.innerHTML = `<p class="text-center text-gray-500 py-4">কোনো গল্প পাওয়া যায়নি</p>`;
+                return;
+            }
+            filtered.forEach((story) => {
+                html += `
+                    <div class="bg-white p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition flex justify-between items-center" onclick="viewStory('${story.id}')">
+                        <div>
+                            <h3 class="font-bold text-lg text-red-600">${story.title}</h3>
+                            <p class="text-sm text-gray-600 mt-1">ক্যাটাগরি: ${story.category || 'সাধারণ'}</p>
+                        </div>
+                        <span class="text-sm text-red-500 font-semibold">পড়ুন &rarr;</span>
+                    </div>
+                `;
+            });
+            storyList.innerHTML = html;
+        }
+
+        // View Story Details & Parts
+        window.viewStory = async function(storyId) {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `<div class="text-center py-10">গল্পের পার্ট লোড হচ্ছে...</div>`;
+
+            try {
+                const storyDoc = await getDoc(doc(db, "stories", storyId));
+                const storyData = storyDoc.data();
+
+                const partsSnap = await getDocs(collection(db, "stories", storyId, "parts"));
+                let parts = [];
+                partsSnap.forEach(p => parts.push({ id: p.id, ...p.data() }));
+                
+                // Sort parts by partNumber
+                parts.sort((a, b) => a.partNumber - b.partNumber);
+
+                let partsHtml = "";
+                if(parts.length === 0) {
+                    partsHtml = `<p class="text-gray-500">এই গল্পের এখনো কোনো পার্ট প্রকাশ করা হয়নি।</p>`;
+                } else {
+                    parts.forEach(p => {
+                        partsHtml += `
+                            <button onclick="readPart('${storyId}', '${p.id}', ${p.partNumber})" class="w-full text-left bg-white p-3 rounded-lg shadow-sm border hover:border-red-500 flex justify-between items-center mb-2">
+                                <span class="font-bold">Part ${p.partNumber}: ${p.title || ''}</span>
+                                <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded font-semibold">${p.partNumber === 1 ? 'ফ্রি' : 'লকড / বিজ্ঞাপন'}</span>
+                            </button>
+                        `;
+                    });
+                }
+
+                contentArea.innerHTML = `
+                    <button onclick="loadHome()" class="text-sm text-red-600 font-bold mb-3">&larr; সকল গল্পে ফিরে যান</button>
+                    <div class="bg-white p-6 rounded-xl shadow mb-4">
+                        <h2 class="text-2xl font-bold text-red-600 mb-1">${storyData.title}</h2>
+                        <p class="text-sm text-gray-500 mb-4">ক্যাটাগরি: ${storyData.category}</p>
+                        <h3 class="font-bold text-lg mb-2 border-b pb-2">পার্ট তালিকা</h3>
+                        <div>${partsHtml}</div>
+                    </div>
+                `;
+            } catch(e) {
+                contentArea.innerHTML = `<div class="bg-red-100 p-4 rounded text-red-600">ত্রুটি: ${e.message}</div>`;
+            }
+        }
+
+        // Read Part Logic with Ad-Lock
+        window.readPart = async function(storyId, partId, partNumber) {
+            const contentArea = document.getElementById('contentArea');
+            
+            // Part 1 is always free
+            if(partNumber === 1 || localStorage.getItem(`unlocked_${partId}`) === 'true') {
+                fetchAndRenderPartContent(storyId, partId);
+            } else {
+                // Show Ad Unlock Screen
+                contentArea.innerHTML = `
+                    <button onclick="viewStory('${storyId}')" class="text-sm text-red-600 font-bold mb-3">&larr; পার্ট তালিকায় ফিরে যান</button>
+                    <div class="bg-white p-6 rounded-xl shadow text-center">
+                        <h2 class="text-xl font-bold text-red-600 mb-2">🔒 এই পার্টটি লক করা আছে</h2>
+                        <p class="text-sm text-gray-600 mb-4">এই পার্টটি পড়তে নিচের ৩টি বিজ্ঞাপনের ধাপ সম্পন্ন করুন:</p>
+                        <div class="space-y-3 mb-6">
+                            <button onclick="completeAdStep(1, '${storyId}', '${partId}')" id="adBtn1" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold">বিজ্ঞাপন ১ খুলুন</button>
+                            <button onclick="completeAdStep(2, '${storyId}', '${partId}')" id="adBtn2" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ২ খুলুন</button>
+                            <button onclick="completeAdStep(3, '${storyId}', '${partId}')" id="adBtn3" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ৩ খুলুন</button>
+                        </div>
+                        <button onclick="unlockPart('${storyId}', '${partId}')" id="unlockFinalBtn" class="w-full bg-green-600 text-white p-3 rounded-lg font-bold opacity-50 cursor-not-allowed" disabled>পার্ট আনলক করুন</button>
+                    </div>
+                `;
+                window.adStepsCompleted = { 1: false, 2: false, 3: false };
+            }
+        }
+
+        window.completeAdStep = function(step, storyId, partId) {
+            window.open('https://example.com/ad-' + step, '_blank'); // Replace with admin ad URL later
+            window.adStepsCompleted[step] = true;
+            
+            const btn = document.getElementById(`adBtn${step}`);
+            btn.classList.add('bg-green-600');
+            btn.innerText = `বিজ্ঞাপন ${step} সম্পন্ন হয়েছে ✓`;
+
+            if(step === 1) {
+                const next = document.getElementById('adBtn2');
+                next.classList.remove('opacity-50', 'cursor-not-allowed');
+                next.removeAttribute('disabled');
+            } else if(step === 2) {
+                const next = document.getElementById('adBtn3');
+                next.classList.remove('opacity-50', 'cursor-not-allowed');
+                next.removeAttribute('disabled');
+            } else if(step === 3) {
+                const finalBtn = document.getElementById('unlockFinalBtn');
+                finalBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                finalBtn.removeAttribute('disabled');
+            }
+        }
+
+        window.unlockPart = function(storyId, partId) {
+            localStorage.setItem(`unlocked_${partId}`, 'true');
+            fetchAndRenderPartContent(storyId, partId);
+        }
+
+        async function fetchAndRenderPartContent(storyId, partId) {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `<div class="text-center py-10">লেখা লোড হচ্ছে...</div>`;
+            try {
+                const partDoc = await getDoc(doc(db, "stories", storyId, "parts", partId));
+                const partData = partDoc.data();
+
+                contentArea.innerHTML = `
+                    <button onclick="viewStory('${storyId}')" class="text-sm text-red-600 font-bold mb-3">&larr; পার্ট তালিকায় ফিরে যান</button>
+                    <div class="bg-white p-6 rounded-xl shadow leading-relaxed">
+                        <h2 class="text-2xl font-bold text-red-600 mb-4">Part ${partData.partNumber}: ${partData.title || ''}</h2>
+                        <div class="text-lg whitespace-pre-line text-gray-800">${partData.content || 'কোনো লেখা নেই।'}</div>
+                    </div>
+                `;
+            } catch(e) {
+                contentArea.innerHTML = `<div class="bg-red-100 p-4 rounded text-red-600">ত্রুটি: ${e.message}</div>`;
+            }
+        }
+
+        // Admin Login UI
         window.openAdminLogin = function() {
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `
@@ -108,38 +261,81 @@
             }
         }
 
-        window.loadAdminDashboard = function() {
+        // Admin Dashboard
+        window.loadAdminDashboard = async function() {
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `
-                <div class="bg-white p-6 rounded-xl shadow">
+                <div class="bg-white p-6 rounded-xl shadow mb-4">
                     <h2 class="text-xl font-bold mb-4 text-red-600">অ্যাডমিন ড্যাশবোর্ড</h2>
+                    
+                    <!-- Create Story -->
                     <div class="p-4 bg-gray-50 rounded-lg border mb-4">
                         <h3 class="font-bold mb-2">নতুন গল্প তৈরি করুন</h3>
                         <input type="text" id="storyTitle" placeholder="গল্পের নাম" class="w-full p-2 border rounded mb-2">
                         <input type="text" id="storyCategory" placeholder="ক্যাটাগরি" class="w-full p-2 border rounded mb-3">
                         <button onclick="window.addNewStory()" class="bg-red-600 text-white px-4 py-2 rounded font-bold">গল্প সংরক্ষণ করুন</button>
                     </div>
+
+                    <!-- Add Part to Story -->
+                    <div class="p-4 bg-gray-50 rounded-lg border">
+                        <h3 class="font-bold mb-2">গল্পে নতুন পার্ট যোগ করুন</h3>
+                        <select id="selectStoryId" class="w-full p-2 border rounded mb-2">
+                            <option value="">গল্প সিলেক্ট করুন</option>
+                        </select>
+                        <input type="number" id="partNumber" placeholder="পার্ট নম্বর (যেমন: 1, 2, 3)" class="w-full p-2 border rounded mb-2">
+                        <input type="text" id="partTitle" placeholder="পার্টের শিরোনাম (ঐচ্ছিক)" class="w-full p-2 border rounded mb-2">
+                        <textarea id="partContent" rows="5" placeholder="গল্পের লেখা এখানে লিখুন..." class="w-full p-2 border rounded mb-3"></textarea>
+                        <button onclick="window.addNewPart()" class="bg-red-600 text-white px-4 py-2 rounded font-bold">পার্ট সংরক্ষণ করুন</button>
+                    </div>
                 </div>
             `;
+
+            // Populate story select dropdown
+            try {
+                const querySnapshot = await getDocs(collection(db, "stories"));
+                const select = document.getElementById('selectStoryId');
+                querySnapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    select.innerHTML += `<option value="${docSnap.id}">${data.title}</option>`;
+                });
+            } catch(e) { console.error(e); }
         }
 
         window.addNewStory = async function() {
             const title = document.getElementById('storyTitle').value;
             const category = document.getElementById('storyCategory').value;
-            if(!title) {
-                alert('দয়া করে গল্পের নাম লিখুন');
+            if(!title) { alert('গল্পের নাম দিন'); return; }
+            try {
+                await addDoc(collection(db, "stories"), { title, category: category || 'সাধারণ', createdAt: new Date() });
+                alert('গল্প সফলভাবে যোগ করা হয়েছে!');
+                window.loadAdminDashboard();
+            } catch(e) { alert('ত্রুটি: ' + e.message); }
+        }
+
+        window.addNewPart = async function() {
+            const storyId = document.getElementById('selectStoryId').value;
+            const partNumber = parseInt(document.getElementById('partNumber').value);
+            const title = document.getElementById('partTitle').value;
+            const content = document.getElementById('partContent').value;
+
+            if(!storyId || !partNumber || !content) {
+                alert('গল্প, পার্ট নম্বর এবং লেখা আবশ্যক!');
                 return;
             }
+
             try {
-                await addDoc(collection(db, "stories"), {
-                    title: title,
-                    category: category || 'সাধারণ',
+                await addDoc(collection(db, "stories", storyId, "parts"), {
+                    partNumber,
+                    title: title || '',
+                    content,
                     createdAt: new Date()
                 });
-                alert('গল্প সফলভাবে যোগ করা হয়েছে!');
-                window.loadHome();
+                alert('পার্ট সফলভাবে যোগ করা হয়েছে!');
+                document.getElementById('partNumber').value = '';
+                document.getElementById('partTitle').value = '';
+                document.getElementById('partContent').value = '';
             } catch(e) {
-                alert('গল্প সেভ করতে সমস্যা হয়েছে: ' + e.message);
+                alert('ত্রুটি: ' + e.message);
             }
         }
 
