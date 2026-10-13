@@ -16,14 +16,12 @@
     <header class="bg-white shadow-md sticky top-0 z-50">
         <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
             <h1 class="text-xl font-bold text-red-600 cursor-pointer" onclick="loadHome()">📖 বাংলা গল্প</h1>
-            <div id="navRight">
-                <button onclick="openAdminLogin()" class="text-sm bg-gray-200 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-300">অ্যাডমিন প্যানেল</button>
-            </div>
+            <button onclick="openAdminLogin()" class="text-sm bg-gray-200 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-300">অ্যাডমিন প্যানেল</button>
         </div>
     </header>
 
     <!-- Main Container -->
-    <main id="app" class="max-w-3xl mx-auto p-4 mb-16">
+    <main class="max-w-3xl mx-auto p-4 mb-16">
         <!-- Search Bar -->
         <div class="mb-4">
             <input type="text" id="searchInput" placeholder="গল্পের নাম বা কীওয়ার্ড দিয়ে খুঁজুন..." class="w-full p-3 bg-white border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500">
@@ -35,11 +33,11 @@
         </div>
     </main>
 
-    <!-- Firebase SDKs -->
+    <!-- Firebase Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, getDoc, addData, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyBlPLnL20HL5iypBFBilJe9wP02B6CnJNA",
@@ -55,9 +53,10 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
+        // Global functions
         window.loadHome = async function() {
             const contentArea = document.getElementById('contentArea');
-            contentArea.innerHTML = `<h2 class="text-lg font-bold mb-3">সকল গল্প</h2><div id="storyList" class="space-y-3">লোডিং...</div>`;
+            contentArea.innerHTML = `<h2 class="text-lg font-bold mb-3">সকল গল্প</h2><div id="storyList" class="space-y-3">লোড হচ্ছে...</div>`;
             
             try {
                 const querySnapshot = await getDocs(collection(db, "stories"));
@@ -68,9 +67,8 @@
                 }
                 querySnapshot.forEach((docSnap) => {
                     const story = docSnap.data();
-                    const storyId = docSnap.id;
                     html += `
-                        <div class="bg-white p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition flex justify-between items-center" onclick="viewStory('${storyId}')">
+                        <div class="bg-white p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition flex justify-between items-center">
                             <div>
                                 <h3 class="font-bold text-lg text-red-600">${story.title || 'নামবিহীন গল্প'}</h3>
                                 <p class="text-sm text-gray-600 mt-1">ক্যাটাগরি: ${story.category || 'সাধারণ'}</p>
@@ -82,7 +80,7 @@
                 document.getElementById('storyList').innerHTML = html;
             } catch (e) {
                 console.error(e);
-                contentArea.innerHTML = `<div class="bg-red-100 p-4 rounded text-red-600">ডাটা লোড করতে সমস্যা হয়েছে।</div>`;
+                contentArea.innerHTML = `<div class="bg-red-100 p-4 rounded text-red-600">ডাটা লোড করতে সমস্যা হয়েছে: ${e.message}</div>`;
             }
         }
 
@@ -93,7 +91,7 @@
                     <h2 class="text-xl font-bold mb-4 text-center text-red-600">অ্যাডমিন লগইন</h2>
                     <input type="email" id="adminEmail" placeholder="ইমেইল অ্যাড্রেস" class="w-full p-3 border rounded-lg mb-3">
                     <input type="password" id="adminPassword" placeholder="পাসওয়ার্ড" class="w-full p-3 border rounded-lg mb-4">
-                    <button onclick="loginAdmin()" class="w-full bg-red-600 text-white p-3 rounded-lg font-bold hover:bg-red-700">লগইন করুন</button>
+                    <button onclick="window.loginAdmin()" class="w-full bg-red-600 text-white p-3 rounded-lg font-bold hover:bg-red-700">লগইন করুন</button>
                 </div>
             `;
         }
@@ -104,7 +102,7 @@
             try {
                 await signInWithEmailAndPassword(auth, email, password);
                 alert('সফলভাবে লগইন হয়েছে!');
-                loadAdminDashboard();
+                window.loadAdminDashboard();
             } catch (error) {
                 alert('লগইন ব্যর্থ হয়েছে: ' + error.message);
             }
@@ -115,21 +113,37 @@
             contentArea.innerHTML = `
                 <div class="bg-white p-6 rounded-xl shadow">
                     <h2 class="text-xl font-bold mb-4 text-red-600">অ্যাডমিন ড্যাশবোর্ড</h2>
-                    <p class="text-gray-600 mb-4">এখান থেকে আপনি নতুন গল্প ও পার্ট যোগ করতে পারবেন।</p>
-                    <div class="p-4 bg-gray-50 rounded-lg border">
+                    <div class="p-4 bg-gray-50 rounded-lg border mb-4">
                         <h3 class="font-bold mb-2">নতুন গল্প তৈরি করুন</h3>
-                        <input type="text" id="newTitle" placeholder="গল্পের নাম" class="w-full p-2 border rounded mb-2">
-                        <input type="text" id="newCategory" placeholder="ক্যাটাগরি" class="w-full p-2 border rounded mb-3">
-                        <button onclick="alert('গল্প সেভ করার ফিচার যুক্ত হচ্ছে!')" class="bg-red-600 text-white px-4 py-2 rounded font-bold">গল্প সংরক্ষণ করুন</button>
+                        <input type="text" id="storyTitle" placeholder="গল্পের নাম" class="w-full p-2 border rounded mb-2">
+                        <input type="text" id="storyCategory" placeholder="ক্যাটাগরি" class="w-full p-2 border rounded mb-3">
+                        <button onclick="window.addNewStory()" class="bg-red-600 text-white px-4 py-2 rounded font-bold">গল্প সংরক্ষণ করুন</button>
                     </div>
                 </div>
             `;
         }
 
-        window.viewStory = function(id) {
-            alert('নির্বাচিত গল্পের ডিটেইলস ও পার্ট তালিকা শীঘ্রই আসছে!');
+        window.addNewStory = async function() {
+            const title = document.getElementById('storyTitle').value;
+            const category = document.getElementById('storyCategory').value;
+            if(!title) {
+                alert('দয়া করে গল্পের নাম লিখুন');
+                return;
+            }
+            try {
+                await addDoc(collection(db, "stories"), {
+                    title: title,
+                    category: category || 'সাধারণ',
+                    createdAt: new Date()
+                });
+                alert('গল্প সফলভাবে যোগ করা হয়েছে!');
+                window.loadHome();
+            } catch(e) {
+                alert('গল্প সেভ করতে সমস্যা হয়েছে: ' + e.message);
+            }
         }
 
+        // Initial Load
         loadHome();
     </script>
 </body>
