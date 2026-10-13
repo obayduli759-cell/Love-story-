@@ -38,7 +38,7 @@
     <!-- Firebase Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
@@ -292,6 +292,7 @@
                 <div class="bg-white p-6 rounded-xl shadow mb-4">
                     <h2 class="text-xl font-bold mb-4 text-red-600">অ্যাডমিন ড্যাশবোর্ড</h2>
                     
+                    <!-- Create Story -->
                     <div class="p-4 bg-gray-50 rounded-lg border mb-6">
                         <h3 class="font-bold mb-2">নতুন গল্প তৈরি করুন</h3>
                         <input type="text" id="storyTitle" placeholder="গল্পের নাম" class="w-full p-2 border rounded mb-2">
@@ -299,6 +300,16 @@
                         <button onclick="window.addNewStory()" class="bg-red-600 text-white px-4 py-2 rounded font-bold">গল্প সংরক্ষণ করুন</button>
                     </div>
 
+                    <!-- Manage / Edit Existing Parts Section -->
+                    <div class="p-4 bg-gray-50 rounded-lg border mb-6">
+                        <h3 class="font-bold mb-2 text-red-600">পোস্ট ম্যানেজ বা এডিট করুন</h3>
+                        <select id="manageStorySelect" onchange="window.loadManageParts()" class="w-full p-2 border rounded mb-2">
+                            <option value="">প্রথমে গল্প সিলেক্ট করুন</option>
+                        </select>
+                        <div id="managePartsList" class="space-y-2 mt-3"></div>
+                    </div>
+
+                    <!-- Add New Part -->
                     <div class="p-4 bg-gray-50 rounded-lg border">
                         <h3 class="font-bold mb-2">গল্পে নতুন পার্ট/পোস্ট যোগ করুন</h3>
                         <select id="selectStoryId" class="w-full p-2 border rounded mb-2">
@@ -324,14 +335,231 @@
 
             try {
                 const querySnapshot = await getDocs(collection(db, "stories"));
-                const select = document.getElementById('selectStoryId');
+                const select1 = document.getElementById('selectStoryId');
+                const select2 = document.getElementById('manageStorySelect');
                 querySnapshot.forEach(docSnap => {
                     const data = docSnap.data();
-                    select.innerHTML += `<option value="${docSnap.id}">${data.title}</option>`;
+                    const opt = `<option value="${docSnap.id}">${data.title}</option>`;
+                    select1.innerHTML += opt;
+                    select2.innerHTML += opt;
                 });
             } catch(e) { console.error(e); }
 
             window.addTextBlock();
+        }
+
+        window.loadManageParts = async function() {
+            const storyId = document.getElementById('manageStorySelect').value;
+            const container = document.getElementById('managePartsList');
+            if(!storyId) { container.innerHTML = ""; return; }
+            container.innerHTML = "লোড হচ্ছে...";
+
+            try {
+                const partsSnap = await getDocs(collection(db, "stories", storyId, "parts"));
+                let parts = [];
+                partsSnap.forEach(p => parts.push({ id: p.id, ...p.data() }));
+                parts.sort((a, b) => a.partNumber - b.partNumber);
+
+                if(parts.length === 0) {
+                    container.innerHTML = `<p class="text-sm text-gray-500">এই গল্পে কোনো পার্ট নেই।</p>`;
+                    return;
+                }
+
+                let html = "";
+                parts.forEach(p => {
+                    html += `
+                        <div class="bg-white p-3 border rounded flex justify-between items-center text-sm">
+                            <span>Part ${p.partNumber}: ${p.title || 'শিরোনামহীন'}</span>
+                            <div class="flex gap-2">
+                                <button onclick="window.editPart('${storyId}', '${p.id}')" class="bg-blue-600 text-white px-2.5 py-1 rounded text-xs font-bold">এডিট</button>
+                                <button onclick="window.deletePart('${storyId}', '${p.id}')" class="bg-red-600 text-white px-2.5 py-1 rounded text-xs font-bold">ডিলিট</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch(e) {
+                container.innerHTML = `<p class="text-sm text-red-500">ত্রুটি: ${e.message}</p>`;
+            }
+        }
+
+        window.deletePart = async function(storyId, partId) {
+            if(confirm('আপনি কি নিশ্চিতভাবে এই পার্টটি ডিলিট করতে চান?')) {
+                try {
+                    await deleteDoc(doc(db, "stories", storyId, "parts", partId));
+                    alert('পার্ট সফলভাবে ডিলিট করা হয়েছে!');
+                    window.loadManageParts();
+                } catch(e) {
+                    alert('ডিলিট করতে সমস্যা হয়েছে: ' + e.message);
+                }
+            }
+        }
+
+        window.editPart = async function(storyId, partId) {
+            try {
+                const partDoc = await getDoc(doc(db, "stories", storyId, "parts", partId));
+                const pData = partDoc.data();
+
+                const contentArea = document.getElementById('contentArea');
+                contentArea.innerHTML = `
+                    <div class="bg-white p-6 rounded-xl shadow mb-4">
+                        <h2 class="text-xl font-bold mb-4 text-red-600">পার্ট এডিট করুন (Part ${pData.partNumber})</h2>
+                        <input type="number" id="editPartNumber" value="${pData.partNumber}" placeholder="পার্ট নম্বর" class="w-full p-2 border rounded mb-2">
+                        <input type="text" id="editPartTitle" value="${pData.title || ''}" placeholder="পার্টের শিরোনাম" class="w-full p-2 border rounded mb-4">
+
+                        <div class="border-t pt-3 mb-3">
+                            <h4 class="font-semibold text-sm mb-2 text-gray-700">কনটেন্ট ব্লকসমূহ (সংশোধন করুন):</h4>
+                            <div id="editBlocksContainer" class="space-y-3 mb-3"></div>
+                            <div class="flex gap-2">
+                                <button onclick="window.addEditTextBlock()" class="text-sm bg-blue-100 text-blue-700 px-3 py-2 rounded-lg font-bold">+ লেখা যোগ করুন</button>
+                                <button onclick="window.addEditImageBlock()" class="text-sm bg-green-100 text-green-700 px-3 py-2 rounded-lg font-bold">+ ছবি যোগ করুন</button>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 mt-4">
+                            <button onclick="window.updatePartData('${storyId}', '${partId}')" class="flex-grow bg-green-600 text-white px-4 py-3 rounded-lg font-bold">পরিবর্তন সেভ করুন</button>
+                            <button onclick="window.loadAdminDashboard()" class="bg-gray-400 text-white px-4 py-3 rounded-lg font-bold">বাতিল</button>
+                        </div>
+                    </div>
+                `;
+
+                window.editBlockCounter = 0;
+                const container = document.getElementById('editBlocksContainer');
+                if(pData.blocks && pData.blocks.length > 0) {
+                    pData.blocks.forEach(b => {
+                        window.editBlockCounter++;
+                        const div = document.createElement('div');
+                        div.className = "p-3 bg-gray-50 border rounded-lg flex flex-col gap-2 relative edit-block-item";
+                        div.dataset.type = b.type;
+                        
+                        if(b.type === 'text') {
+                            div.innerHTML = `
+                                <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
+                                    <span>📝 টেক্সট ব্লক</span>
+                                    <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
+                                </div>
+                                <textarea class="edit-block-value w-full p-2 border rounded text-sm" rows="3">${b.value}</textarea>
+                            `;
+                        } else {
+                            div.innerHTML = `
+                                <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
+                                    <span>🖼️ ছবি ব্লক</span>
+                                    <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
+                                </div>
+                                <input type="file" accept="image/*" onchange="handleEditImageUpload(event, '${window.editBlockCounter}')" class="w-full text-sm border p-2 rounded bg-white">
+                                <input type="hidden" id="edit_img_val_${window.editBlockCounter}" class="edit-block-value" value="${b.value}">
+                                <div id="edit_preview_${window.editBlockCounter}" class="mt-2">
+                                    <img src="${b.value}" class="max-h-40 rounded shadow border mx-auto">
+                                </div>
+                            `;
+                        }
+                        container.appendChild(div);
+                    });
+                }
+            } catch(e) {
+                alert('এডিট ডাটা লোড করতে সমস্যা হয়েছে: ' + e.message);
+            }
+        }
+
+        window.addEditTextBlock = function() {
+            window.editBlockCounter++;
+            const container = document.getElementById('editBlocksContainer');
+            const div = document.createElement('div');
+            div.className = "p-3 bg-gray-50 border rounded-lg flex flex-col gap-2 relative edit-block-item";
+            div.dataset.type = "text";
+            div.innerHTML = `
+                <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
+                    <span>📝 টেক্সট ব্লক</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
+                </div>
+                <textarea class="edit-block-value w-full p-2 border rounded text-sm" rows="3" placeholder="লেখার অংশটি লিখুন..."></textarea>
+            `;
+            container.appendChild(div);
+        }
+
+        window.addEditImageBlock = function() {
+            window.editBlockCounter++;
+            const container = document.getElementById('editBlocksContainer');
+            const div = document.createElement('div');
+            div.className = "p-3 bg-gray-50 border rounded-lg flex flex-col gap-2 relative edit-block-item";
+            div.dataset.type = "image";
+            div.innerHTML = `
+                <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
+                    <span>🖼️ নতুন ছবি সিলেক্ট করুন</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
+                </div>
+                <input type="file" accept="image/*" onchange="handleEditImageUpload(event, '${window.editBlockCounter}')" class="w-full text-sm border p-2 rounded bg-white">
+                <input type="hidden" id="edit_img_val_${window.editBlockCounter}" class="edit-block-value" value="">
+                <div id="edit_preview_${window.editBlockCounter}" class="hidden mt-2">
+                    <img src="" class="max-h-40 rounded shadow border mx-auto">
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        window.handleEditImageUpload = function(event, blockId) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const max_size = 800;
+                        if (width > height) {
+                            if (width > max_size) { height *= max_size / width; width = max_size; }
+                        } else {
+                            if (height > max_size) { width *= max_size / height; height = max_size; }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        
+                        document.getElementById(`edit_img_val_${blockId}`).value = compressedDataUrl;
+                        const previewDiv = document.getElementById(`edit_preview_${blockId}`);
+                        previewDiv.querySelector('img').src = compressedDataUrl;
+                        previewDiv.classList.remove('hidden');
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        window.updatePartData = async function(storyId, partId) {
+            const partNumber = parseInt(document.getElementById('editPartNumber').value);
+            const title = document.getElementById('editPartTitle').value;
+
+            const blockElements = document.querySelectorAll('.edit-block-item');
+            let blocks = [];
+            blockElements.forEach(el => {
+                const type = el.dataset.type;
+                const value = el.querySelector('.edit-block-value').value;
+                if(value.trim() !== '') {
+                    blocks.push({ type, value });
+                }
+            });
+
+            if(blocks.length === 0) {
+                alert('কমপক্ষে একটি লেখা বা ছবি থাকা আবশ্যক!');
+                return;
+            }
+
+            try {
+                await updateDoc(doc(db, "stories", storyId, "parts", partId), {
+                    partNumber,
+                    title: title || '',
+                    blocks: blocks
+                });
+                alert('পার্ট সফলভাবে আপডেট ও সংশোধন করা হয়েছে!');
+                window.loadAdminDashboard();
+            } catch(e) {
+                alert('ত্রুটি: ' + e.message);
+            }
         }
 
         window.addTextBlock = function() {
@@ -365,6 +593,7 @@
                 </div>
                 <input type="file" accept="image/*" onchange="handleImageUpload(event, '${window.blockCount}')" class="w-full text-sm border p-2 rounded bg-gray-50">
                 <input type="hidden" id="img_val_${window.blockCount}" class="block-value">
+                <div id="status_${window.blockCount}" class="text-xs text-blue-600 font-semibold mt-1"></div>
                 <div id="preview_${window.blockCount}" class="hidden mt-2">
                     <img src="" class="max-h-40 rounded shadow border mx-auto">
                 </div>
@@ -375,12 +604,36 @@
         window.handleImageUpload = function(event, blockId) {
             const file = event.target.files[0];
             if (file) {
+                const statusDiv = document.getElementById(`status_${blockId}`);
+                statusDiv.innerText = "ছবি প্রসেস হচ্ছে, অপেক্ষা করুন...";
+                
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    document.getElementById(`img_val_${blockId}`).value = e.target.result;
-                    const previewDiv = document.getElementById(`preview_${blockId}`);
-                    previewDiv.querySelector('img').src = e.target.result;
-                    previewDiv.classList.remove('hidden');
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const max_size = 800;
+                        if (width > height) {
+                            if (width > max_size) { height *= max_size / width; width = max_size; }
+                        } else {
+                            if (height > max_size) { width *= max_size / height; height = max_size; }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        
+                        document.getElementById(`img_val_${blockId}`).value = compressedDataUrl;
+                        statusDiv.innerText = "ছবি প্রস্তুত ✓";
+                        
+                        const previewDiv = document.getElementById(`preview_${blockId}`);
+                        previewDiv.querySelector('img').src = compressedDataUrl;
+                        previewDiv.classList.remove('hidden');
+                    };
                 };
                 reader.readAsDataURL(file);
             }
@@ -409,13 +662,26 @@
 
             const blockElements = document.querySelectorAll('.block-item');
             let blocks = [];
+            let imageProcessing = false;
+
             blockElements.forEach(el => {
                 const type = el.dataset.type;
                 const value = el.querySelector('.block-value').value;
-                if(value.trim() !== '') {
+                const fileInput = el.querySelector('input[type="file"]');
+                
+                if (fileInput && fileInput.files.length > 0 && !value) {
+                    imageProcessing = true;
+                }
+                
+                if (value.trim() !== '') {
                     blocks.push({ type, value });
                 }
             });
+
+            if (imageProcessing) {
+                alert('ছবির প্রসেসিং শেষ হয়নি। কিছুক্ষণ অপেক্ষা করুন।');
+                return;
+            }
 
             if(blocks.length === 0) {
                 alert('কমপক্ষে একটি লেখা বা ছবি সিলেক্ট করুন!');
@@ -429,7 +695,7 @@
                     blocks: blocks,
                     createdAt: new Date()
                 });
-                alert('সফলভাবে ছবিসহ পার্ট পোস্ট করা হয়েছে!');
+                alert('সফলভাবে পার্ট পোস্ট করা হয়েছে!');
                 window.loadAdminDashboard();
             } catch(e) {
                 alert('ত্রুটি: ' + e.message);
