@@ -183,10 +183,20 @@
                     if(isUnlocked) {
                         let blocksHtml = "";
                         if(p.blocks && p.blocks.length > 0) {
-                            p.blocks.forEach(b => {
+                            p.blocks.forEach((b) => {
                                 if(b.type === 'text') {
                                     blocksHtml += `<div class="text-lg whitespace-pre-line text-gray-800 mb-4 leading-relaxed">${b.value}</div>`;
                                 } else if(b.type === 'image') {
+                                    // প্রতিটি ছবির উপরে ব্যানার অ্যাড শো করানোর লজিক
+                                    blocksHtml += `
+                                        <div class="my-6 p-4 bg-white rounded-xl shadow-sm border border-gray-200 text-center">
+                                            <p class="text-xs text-gray-400 mb-2">বিজ্ঞাপন</p>
+                                            <!-- ব্যানার অ্যাড কোড এখানে বসবে -->
+                                            <div class="min-h-[50px] flex items-center justify-center bg-gray-100 rounded">
+                                                <span>বিজ্ঞাপন</span>
+                                            </div>
+                                        </div>
+                                    `;
                                     blocksHtml += `
                                         <div class="my-4 flex flex-col md:flex-row gap-3 items-center">
                                             <div class="flex-grow w-full">
@@ -395,7 +405,7 @@
                 parts.sort((a, b) => a.partNumber - b.partNumber);
 
                 if(parts.length === 0) {
-                    container.innerHTML = `<p class="text-sm text-gray-500">এই গল্পে কোনো পার্ট নেই।</p>`;
+                    container.innerHTML = `<p class="text-sm text-gray-500">এই গল্পে কোনো পার্ট নেই።</p>`;
                     return;
                 }
 
@@ -413,7 +423,7 @@
                 });
                 container.innerHTML = html;
             } catch(e) {
-                container.innerHTML = `<p class="text-sm text-red-500">ত্রুটি: ${e.message}</p>`;
+                container.innerHTML = `<p class="text-sm text-red-600">ত্রুটি: ${e.message}</p>`;
             }
         }
 
