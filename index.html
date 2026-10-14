@@ -206,14 +206,20 @@
                     } else {
                         feedHtml += `
                             <div class="text-center py-6 bg-gray-50 rounded-xl border border-dashed p-4">
-                                <h4 class="text-lg font-bold text-red-600 mb-2">🔒 পরবর্তী পার্টটি লক করা আছে</h4>
-                                <p class="text-sm text-gray-600 mb-4">এই পার্টটি পড়তে নিচের ৩টি স্মার্ট লিংকের বিজ্ঞাপন ধাপ সম্পন্ন করুন:</p>
+                                <!-- সোশ্যাল বার স্পেশাল অফার এড -->
+                                <a href="https://uplcm.com/4/12028302" target="_blank" class="block bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold p-3 rounded-xl shadow-md hover:opacity-90 transition mb-6 text-sm flex items-center justify-center gap-2">
+                                    <span>🔥 বিশেষ সোশ্যাল বার অফার (এখানে ক্লিক করুন)</span>
+                                </a>
+
+                                <h4 class="text-lg font-bold text-red-600 mb-2">🔒 Part ${p.partNumber} লক করা আছে</h4>
+                                <p class="text-sm text-gray-600 mb-4">এই পার্টটি পড়তে নিচের ৩টি বিজ্ঞাপনের ধাপ সম্পন্ন করুন:</p>
+                                
                                 <div class="space-y-3 mb-4 max-w-md mx-auto">
-                                    <button onclick="completeAdStep(1, '${storyId}', '${p.id}')" id="adBtn_${p.id}_1" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm">বিজ্ঞাপন ১ খুলুন</button>
-                                    <button onclick="completeAdStep(2, '${storyId}', '${p.id}')" id="adBtn_${p.id}_2" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ২ খুলুন</button>
-                                    <button onclick="completeAdStep(3, '${storyId}', '${p.id}')" id="adBtn_${p.id}_3" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ৩ খুলুন</button>
+                                    <button onclick="completeAdStep(1, '${storyId}', '${p.id}')" id="adBtn_${p.id}_1" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm shadow hover:bg-blue-600">বিজ্ঞাপন ১ খুলুন</button>
+                                    <button onclick="completeAdStep(2, '${storyId}', '${p.id}')" id="adBtn_${p.id}_2" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm shadow opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ২ খুলুন</button>
+                                    <button onclick="completeAdStep(3, '${storyId}', '${p.id}')" id="adBtn_${p.id}_3" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm shadow opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ৩ খুলুন</button>
                                 </div>
-                                <button onclick="unlockPartFeed('${storyId}', '${p.id}')" id="unlockFinalBtn_${p.id}" class="w-full max-w-md bg-green-600 text-white p-3 rounded-lg font-bold text-sm opacity-50 cursor-not-allowed mx-auto block" disabled>পার্ট আনলক করুন</button>
+                                <button onclick="unlockPartFeed('${storyId}', '${p.id}')" id="unlockFinalBtn_${p.id}" class="w-full max-w-md bg-green-600 text-white p-3 rounded-lg font-bold text-sm opacity-50 cursor-not-allowed mx-auto block shadow" disabled>পার্ট আনলক করুন</button>
                             </div>
                         `;
                         feedHtml += `</div>`;
@@ -238,11 +244,11 @@
             });
         }
 
-        // আপনার দেওয়া ৩টি স্মার্ট লিংক এখানে বসানো হলো (১০ সেকেন্ড টাইমার সহ)
+        // অ্যাড স্টেপ ফাংশন (১০ সেকেন্ড কাউন্টডাউন)
         window.completeAdStep = function(step, storyId, partId) {
             let adUrl = "";
-            if(step === 1) adUrl = "https://uplcm.com/4/12026886";
-            else if(step === 2) adUrl = "https://uplcm.com/4/12022509";
+            if(step === 1) adUrl = "https://uplcm.com/4/12022506";
+            else if(step === 2) adUrl = "https://uplcm.com/4/12026886";
             else if(step === 3) adUrl = "https://uplcm.com/4/12022516";
 
             const btn = document.getElementById(`adBtn_${partId}_${step}`);
