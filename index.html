@@ -57,6 +57,7 @@
 
         let allStories = [];
         window.blockCount = 0;
+        let activeAdSession = null;
 
         window.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -68,6 +69,14 @@
                 await viewStory(storyId);
             } else {
                 loadHome();
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            if (window.activeAdSession && window.activeAdSession.timerCompleted) {
+                const { step, storyId, partId } = window.activeAdSession;
+                verifyAdCompletion(step, storyId, partId);
+                window.activeAdSession = null;
             }
         });
 
@@ -198,7 +207,7 @@
                         feedHtml += `
                             <div class="text-center py-6 bg-gray-50 rounded-xl border border-dashed p-4">
                                 <h4 class="text-lg font-bold text-red-600 mb-2">🔒 পরবর্তী পার্টটি লক করা আছে</h4>
-                                <p class="text-sm text-gray-600 mb-4">এই পার্টটি পড়তে নিচের ৩টি বিজ্ঞাপনের ধাপ সম্পন্ন করুন:</p>
+                                <p class="text-sm text-gray-600 mb-4">এই পার্টটি পড়তে নিচের ৩টি স্মার্ট লিংকের বিজ্ঞাপন ধাপ সম্পন্ন করুন:</p>
                                 <div class="space-y-3 mb-4 max-w-md mx-auto">
                                     <button onclick="completeAdStep(1, '${storyId}', '${p.id}')" id="adBtn_${p.id}_1" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm">বিজ্ঞাপন ১ খুলুন</button>
                                     <button onclick="completeAdStep(2, '${storyId}', '${p.id}')" id="adBtn_${p.id}_2" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ২ খুলুন</button>
@@ -229,30 +238,52 @@
             });
         }
 
+        // আপনার দেওয়া ৩টি স্মার্ট লিংক এখানে বসানো হলো (১০ সেকেন্ড টাইমার সহ)
         window.completeAdStep = function(step, storyId, partId) {
             let adUrl = "";
-            if(step === 1) adUrl = "https://uplcm.com/4/12022509";
-            else if(step === 2) adUrl = "https://uplcm.com/4/12022506";
+            if(step === 1) adUrl = "https://uplcm.com/4/12026886";
+            else if(step === 2) adUrl = "https://uplcm.com/4/12022509";
             else if(step === 3) adUrl = "https://uplcm.com/4/12022516";
+
+            const btn = document.getElementById(`adBtn_${partId}_${step}`);
+            btn.setAttribute('disabled', 'true');
+            btn.classList.add('cursor-not-allowed');
+
+            let timeLeft = 10;
+            window.activeAdSession = { step, storyId, partId, timerCompleted: false };
 
             window.open(adUrl, '_blank');
 
+            const timerInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft > 0) {
+                    btn.innerText = `অপেক্ষা করুন ${timeLeft} সেকেন্ড...`;
+                } else {
+                    clearInterval(timerInterval);
+                    btn.innerText = `বিজ্ঞাপন ${step} দেখা সম্পন্ন হয়েছে। সাইটে ফিরে আসুন ✓`;
+                    if (window.activeAdSession) {
+                        window.activeAdSession.timerCompleted = true;
+                    }
+                }
+            }, 1000);
+        }
+
+        function verifyAdCompletion(step, storyId, partId) {
             const btn = document.getElementById(`adBtn_${partId}_${step}`);
+            if(!btn) return;
+
             btn.classList.add('bg-green-600');
             btn.innerText = `বিজ্ঞাপন ${step} সম্পন্ন হয়েছে ✓`;
 
             if(step === 1) {
                 const next = document.getElementById(`adBtn_${partId}_2`);
-                next.classList.remove('opacity-50', 'cursor-not-allowed');
-                next.removeAttribute('disabled');
+                if(next) { next.classList.remove('opacity-50', 'cursor-not-allowed'); next.removeAttribute('disabled'); }
             } else if(step === 2) {
                 const next = document.getElementById(`adBtn_${partId}_3`);
-                next.classList.remove('opacity-50', 'cursor-not-allowed');
-                next.removeAttribute('disabled');
+                if(next) { next.classList.remove('opacity-50', 'cursor-not-allowed'); next.removeAttribute('disabled'); }
             } else if(step === 3) {
                 const finalBtn = document.getElementById(`unlockFinalBtn_${partId}`);
-                finalBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                finalBtn.removeAttribute('disabled');
+                if(finalBtn) { finalBtn.classList.remove('opacity-50', 'cursor-not-allowed'); finalBtn.removeAttribute('disabled'); }
             }
         }
 
@@ -292,7 +323,6 @@
                 <div class="bg-white p-6 rounded-xl shadow mb-4">
                     <h2 class="text-xl font-bold mb-4 text-red-600">অ্যাডমিন ড্যাশবোর্ড</h2>
                     
-                    <!-- Create Story -->
                     <div class="p-4 bg-gray-50 rounded-lg border mb-6">
                         <h3 class="font-bold mb-2">নতুন গল্প তৈরি করুন</h3>
                         <input type="text" id="storyTitle" placeholder="গল্পের নাম" class="w-full p-2 border rounded mb-2">
@@ -300,7 +330,6 @@
                         <button onclick="window.addNewStory()" class="bg-red-600 text-white px-4 py-2 rounded font-bold">গল্প সংরক্ষণ করুন</button>
                     </div>
 
-                    <!-- Manage / Edit Existing Parts Section -->
                     <div class="p-4 bg-gray-50 rounded-lg border mb-6">
                         <h3 class="font-bold mb-2 text-red-600">পোস্ট ম্যানেজ বা এডিট করুন</h3>
                         <select id="manageStorySelect" onchange="window.loadManageParts()" class="w-full p-2 border rounded mb-2">
@@ -309,7 +338,6 @@
                         <div id="managePartsList" class="space-y-2 mt-3"></div>
                     </div>
 
-                    <!-- Add New Part -->
                     <div class="p-4 bg-gray-50 rounded-lg border">
                         <h3 class="font-bold mb-2">গল্পে নতুন পার্ট/পোস্ট যোগ করুন</h3>
                         <select id="selectStoryId" class="w-full p-2 border rounded mb-2">
