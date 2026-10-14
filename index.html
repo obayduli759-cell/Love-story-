@@ -703,7 +703,7 @@
                         const canvas = document.createElement('canvas');
                         let width = img.width;
                         let height = img.height;
-                        const max_size = 800;
+                        const max_size = 600; // অপ্টিমাইজড সাইজ
                         if (width > height) {
                             if (width > max_size) { height *= max_size / width; width = max_size; }
                         } else {
@@ -713,7 +713,7 @@
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.5); // অপ্টিমাইজড কোয়ালিটি
                         
                         document.getElementById(`edit_img_val_${blockId}`).value = compressedDataUrl;
                         const previewDiv = document.getElementById(`edit_preview_${blockId}`);
@@ -800,7 +800,7 @@
             const file = event.target.files[0];
             if (file) {
                 const statusDiv = document.getElementById(`status_${blockId}`);
-                statusDiv.innerText = "ছবি প্রসেস হচ্ছে, অপেক্ষা করুন...";
+                statusDiv.innerText = "ছবি প্রসেস ও সাইজ ছোট করা হচ্ছে...";
                 
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -810,7 +810,7 @@
                         const canvas = document.createElement('canvas');
                         let width = img.width;
                         let height = img.height;
-                        const max_size = 800;
+                        const max_size = 600; // ডেটাবেস হালকা রাখার জন্য সাইজ লিমিট
                         if (width > height) {
                             if (width > max_size) { height *= max_size / width; width = max_size; }
                         } else {
@@ -820,7 +820,7 @@
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.5); // ছবির কোয়ালিটি অপ্টিমাইজড (0.5)
                         
                         document.getElementById(`img_val_${blockId}`).value = compressedDataUrl;
                         statusDiv.innerText = "ছবি প্রস্তুত ✓";
