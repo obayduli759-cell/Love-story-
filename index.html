@@ -79,7 +79,6 @@
 
         let allStories = [];
         window.blockCount = 0;
-        let activeAdSession = null;
         window.currentFontSize = 18;
 
         window.adSettings = {
@@ -446,8 +445,9 @@
                         <div id="managePartsList" class="space-y-2 mt-3"></div>
                     </div>
 
-                    <div class="p-4 bg-gray-50 rounded-lg border">
-                        <h3 class="font-bold mb-2">গল্পে নতুন পার্ট/পোস্ট যোগ করুন</h3>
+                    <div class="p-4 bg-gray-50 rounded-lg border" id="partEditorSection">
+                        <h3 class="font-bold mb-2" id="partEditorHeading">গল্পে নতুন পার্ট/পোস্ট যোগ করুন</h3>
+                        <input type="hidden" id="editingPartId" value="">
                         <select id="selectStoryId" class="w-full p-2 border rounded mb-2">
                             <option value="">গল্প সিলেক্ট করুন</option>
                         </select>
@@ -464,7 +464,8 @@
                             </div>
                         </div>
 
-                        <button onclick="window.addNewPartWithBlocks()" class="w-full bg-red-600 text-white px-4 py-3 rounded-lg font-bold mt-4">সম্পূর্ণ পার্ট পোস্ট করুন</button>
+                        <button onclick="window.saveOrUpdatePart()" id="partSubmitBtn" class="w-full bg-red-600 text-white px-4 py-3 rounded-lg font-bold mt-4">সম্পূর্ণ পার্ট পোস্ট করুন</button>
+                        <button onclick="window.cancelEditPart()" id="cancelEditBtn" class="w-full bg-gray-500 text-white px-4 py-2 rounded-lg font-bold mt-2 hidden">এডিট বাতিল করুন</button>
                     </div>
                 </div>
             `;
@@ -516,10 +517,12 @@
 
                 let html = "";
                 parts.forEach(p => {
+                    const blocksJson = encodeURIComponent(JSON.stringify(p.blocks || []));
                     html += `
                         <div class="bg-white p-3 border rounded flex justify-between items-center text-sm">
                             <span>Part ${p.partNumber}: ${p.title || 'শিরোনামহীন'}</span>
                             <div class="flex gap-2">
+                                <button onclick="window.editPart('${storyId}', '${p.id}', '${p.partNumber}', '${p.title || ''}', '${blocksJson}')" class="bg-blue-600 text-white px-2.5 py-1 rounded text-xs font-bold">এডিট</button>
                                 <button onclick="window.deletePart('${storyId}', '${p.id}')" class="bg-red-600 text-white px-2.5 py-1 rounded text-xs font-bold">ডিলিট</button>
                             </div>
                         </div>
@@ -541,6 +544,69 @@
                     alert('ডিলিট করতে সমস্যা হয়েছে: ' + e.message);
                 }
             }
+        }
+
+        window.editPart = function(storyId, partId, partNumber, title, blocksJson) {
+            document.getElementById('selectStoryId').value = storyId;
+            document.getElementById('partNumber').value = partNumber;
+            document.getElementById('partTitle').value = title === 'undefined' ? '' : title;
+            document.getElementById('editingPartId').value = partId;
+            
+            document.getElementById('partEditorHeading').innerText = "পার্ট এডিট বা পরিবর্তন করুন";
+            document.getElementById('partSubmitBtn').innerText = "এডিট আপডেট করুন";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+
+            const container = document.getElementById('blocksContainer');
+            container.innerHTML = "";
+            window.blockCount = 0;
+
+            const blocks = JSON.parse(decodeURIComponent(blocksJson));
+            blocks.forEach(b => {
+                window.blockCount++;
+                const div = document.createElement('div');
+                div.className = "p-3 bg-white border rounded-lg flex flex-col gap-2 relative block-item";
+                div.dataset.type = b.type;
+
+                if(b.type === 'text') {
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
+                            <span>📝 টেক্সট ব্লক</span>
+                            <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
+                        </div>
+                        <textarea class="block-value w-full p-2 border rounded text-sm" rows="3">${b.value}</textarea>
+                    `;
+                } else if(b.type === 'image') {
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
+                            <span>🖼️ ছবি (নতুন দিতে পারেন বা আগেরটি থাকবে)</span>
+                            <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
+                        </div>
+                        <input type="file" accept="image/*" onchange="window.handleImageUpload(event, '${window.blockCount}')" class="w-full text-sm border p-2 rounded bg-gray-50">
+                        <input type="hidden" id="img_val_${window.blockCount}" class="block-value" value="${b.value}">
+                        <div id="status_${window.blockCount}" class="text-xs text-blue-600 font-semibold mt-1">আগের ছবি যুক্ত আছে ✓</div>
+                        <div id="preview_${window.blockCount}" class="mt-2">
+                            <img src="${b.value}" class="max-h-40 rounded shadow border mx-auto">
+                        </div>
+                    `;
+                }
+                container.appendChild(div);
+            });
+
+            document.getElementById('partEditorSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        window.cancelEditPart = function() {
+            document.getElementById('selectStoryId').value = "";
+            document.getElementById('partNumber').value = "";
+            document.getElementById('partTitle').value = "";
+            document.getElementById('editingPartId').value = "";
+            
+            document.getElementById('partEditorHeading').innerText = "গল্পে নতুন পার্ট/পোস্ট যোগ করুন";
+            document.getElementById('partSubmitBtn').innerText = "সম্পূর্ণ পার্ট পোস্ট করুন";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+            
+            document.getElementById('blocksContainer').innerHTML = "";
+            window.addTextBlock();
         }
 
         window.addTextBlock = function() {
@@ -629,10 +695,11 @@
             } catch(e) { alert('ত্রুটি: ' + e.message); }
         }
 
-        window.addNewPartWithBlocks = async function() {
+        window.saveOrUpdatePart = async function() {
             const storyId = document.getElementById('selectStoryId').value;
             const partNumber = parseInt(document.getElementById('partNumber').value);
             const title = document.getElementById('partTitle').value;
+            const editingPartId = document.getElementById('editingPartId').value;
 
             if(!storyId || !partNumber) {
                 alert('গল্প এবং পার্ট নম্বর নির্বাচন করা আবশ্যক!');
@@ -655,15 +722,27 @@
             }
 
             try {
-                await addDoc(collection(db, "stories", storyId, "parts"), {
-                    partNumber,
-                    title: title || '',
-                    blocks: blocks,
-                    likes: 0,
-                    comments: [],
-                    createdAt: new Date()
-                });
-                alert('সফলভাবে পার্ট পোস্ট করা হয়েছে!');
+                if(editingPartId) {
+                    // Update existing part
+                    const partRef = doc(db, "stories", storyId, "parts", editingPartId);
+                    await updateDoc(partRef, {
+                        partNumber,
+                        title: title || '',
+                        blocks: blocks
+                    });
+                    alert('পার্ট সফলভাবে আপডেট করা হয়েছে!');
+                } else {
+                    // Add new part
+                    await addDoc(collection(db, "stories", storyId, "parts"), {
+                        partNumber,
+                        title: title || '',
+                        blocks: blocks,
+                        likes: 0,
+                        comments: [],
+                        createdAt: new Date()
+                    });
+                    alert('সফলভাবে নতুন পার্ট পোস্ট করা হয়েছে!');
+                }
                 window.loadAdminDashboard();
             } catch(e) {
                 alert('ত্রুটি: ' + e.message);
