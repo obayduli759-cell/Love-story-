@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
@@ -28,9 +28,9 @@
     <!-- Header -->
     <header class="bg-white shadow-md sticky top-0 z-50">
         <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
-            <h1 class="text-xl font-bold text-red-600 cursor-pointer flex items-center gap-1" onclick="loadHome()">📖 বাংলা গল্প</h1>
+            <h1 class="text-xl font-bold text-red-600 cursor-pointer flex items-center gap-1" onclick="window.loadHome()">📖 বাংলা গল্প</h1>
             <div id="headerRight" class="flex items-center gap-2">
-                <button onclick="openAdminLogin()" class="text-sm bg-gray-200 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-300">অ্যাডমিন প্যানেল</button>
+                <button onclick="window.openAdminLogin()" class="text-sm bg-gray-200 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-300">অ্যাডমিন প্যানেল</button>
             </div>
         </div>
     </header>
@@ -43,12 +43,12 @@
             <div class="text-xs md:text-sm">
                 <span class="font-bold">📖 শেষ যেখানে পড়া ছেড়েছিলেন:</span> <span id="continueTitle" class="underline"></span>
             </div>
-            <button onclick="resumeReading()" class="bg-white text-red-600 text-xs px-3 py-1.5 rounded-lg font-bold shadow hover:bg-gray-100">পড়া চালিয়ে যান &rarr;</button>
+            <button onclick="window.resumeReading()" class="bg-white text-red-600 text-xs px-3 py-1.5 rounded-lg font-bold shadow hover:bg-gray-100">পড়া চালিয়ে যান &rarr;</button>
         </div>
 
         <!-- Search Bar -->
         <div class="mb-4">
-            <input type="text" id="searchInput" oninput="handleSearch()" placeholder="গল্পের নাম বা কীওয়ার্ড দিয়ে খুঁজুন..." class="w-full p-3 bg-white border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+            <input type="text" id="searchInput" oninput="window.handleSearch()" placeholder="গল্পের নাম বা কীওয়ার্ড দিয়ে খুঁজুন..." class="w-full p-3 bg-white border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500">
         </div>
 
         <!-- Content Area -->
@@ -96,7 +96,6 @@
             document.getElementById("readingProgress").style.width = (scrolled || 0) + "%";
         });
 
-        // ১. দ্রুত পেজ দেখানোর জন্য আসল পরিবর্তন
         window.addEventListener('DOMContentLoaded', () => {
             checkContinueReading();
 
@@ -104,14 +103,13 @@
             const storyId = urlParams.get('story');
             const partId = urlParams.get('part');
 
-            // ব্যাকগ্রাউন্ডে অ্যাড সেটিংস লোড হবে, পেজ আটকে থাকবে না
             fetchAdSettings();
 
             if (storyId && partId) {
                 localStorage.setItem(`unlocked_${partId}`, 'true');
-                viewStory(storyId);
+                window.viewStory(storyId);
             } else {
-                loadHome();
+                window.loadHome();
             }
         });
 
@@ -144,21 +142,18 @@
             contentArea.innerHTML = `<h2 class="text-lg font-bold mb-3">সকল গল্প</h2><div id="storyList" class="space-y-3">লোড হচ্ছে...</div>`;
             
             try {
-                // গল্প না থাকলেও দ্রুত রেজাল্ট আনবে
                 const querySnapshot = await getDocs(collection(db, "stories"));
                 allStories = [];
                 let html = "";
-                
                 if(querySnapshot.empty) {
                     contentArea.innerHTML = `<div class="bg-white p-6 rounded-xl shadow text-center"><p class="text-gray-500">এখনো কোনো গল্প যোগ করা হয়নি।</p></div>`;
                     return;
                 }
-
                 querySnapshot.forEach((docSnap) => {
                     const story = { id: docSnap.id, ...docSnap.data() };
                     allStories.push(story);
                     html += `
-                        <div class="bg-white p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition flex justify-between items-center" onclick="viewStory('${story.id}')">
+                        <div class="bg-white p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition flex justify-between items-center" onclick="window.viewStory('${story.id}')">
                             <div>
                                 <h3 class="font-bold text-lg text-red-600">${story.title || 'নামবিহীন গল্প'}</h3>
                                 <p class="text-sm text-gray-600 mt-1">ক্যাটাগরি: ${story.category || 'সাধারণ'}</p>
@@ -190,7 +185,7 @@
             }
             filtered.forEach((story) => {
                 html += `
-                    <div class="bg-white p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition flex justify-between items-center" onclick="viewStory('${story.id}')">
+                    <div class="bg-white p-4 rounded-xl shadow cursor-pointer hover:shadow-md transition flex justify-between items-center" onclick="window.viewStory('${story.id}')">
                         <div>
                             <h3 class="font-bold text-lg text-red-600">${story.title}</h3>
                             <p class="text-sm text-gray-600 mt-1">ক্যাটাগরি: ${story.category || 'সাধারণ'}</p>
@@ -229,7 +224,7 @@
 
                 if(parts.length === 0) {
                     contentArea.innerHTML = `
-                        <button onclick="loadHome()" class="text-sm text-red-600 font-bold mb-3">&larr; সকল গল্পে ফিরে যান</button>
+                        <button onclick="window.loadHome()" class="text-sm text-red-600 font-bold mb-3">&larr; সকল গল্পে ফিরে যান</button>
                         <div class="bg-white p-6 rounded-xl shadow text-center"><p class="text-gray-500">এই গল্পের এখনো কোনো পার্ট প্রকাশ করা হয়নি।</p></div>
                     `;
                     return;
@@ -237,11 +232,11 @@
 
                 let feedHtml = `
                     <div class="flex justify-between items-center mb-3">
-                        <button onclick="loadHome()" class="text-sm text-red-600 font-bold">&larr; সকল গল্পে ফিরে যান</button>
+                        <button onclick="window.loadHome()" class="text-sm text-red-600 font-bold">&larr; সকল গল্পে ফিরে যান</button>
                         <div class="flex items-center bg-white px-3 py-1 rounded-lg border text-xs font-bold gap-2">
                             <span>লেখা কাস্টমাইজ:</span>
-                            <button onclick="changeFontSize(-2)" class="px-2 py-0.5 bg-gray-100 rounded hover:bg-gray-200">A-</button>
-                            <button onclick="changeFontSize(2)" class="px-2 py-0.5 bg-gray-100 rounded hover:bg-gray-200">A+</button>
+                            <button onclick="window.changeFontSize(-2)" class="px-2 py-0.5 bg-gray-100 rounded hover:bg-gray-200">A-</button>
+                            <button onclick="window.changeFontSize(2)" class="px-2 py-0.5 bg-gray-100 rounded hover:bg-gray-200">A+</button>
                         </div>
                     </div>
 
@@ -258,7 +253,7 @@
                     feedHtml += `<div class="bg-white p-6 rounded-xl shadow mb-6 border border-gray-200">`;
                     feedHtml += `<div class="flex justify-between items-center border-b pb-3 mb-4">
                         <h3 class="text-xl font-bold text-red-600">Part ${p.partNumber}: ${p.title || ''}</h3>
-                        <button onclick="sharePartLink('${storyId}', '${p.id}')" class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-200">🔗 শেয়ার</button>
+                        <button onclick="window.sharePartLink('${storyId}', '${p.id}')" class="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-200">🔗 শেয়ার</button>
                     </div>`;
 
                     if(isUnlocked) {
@@ -282,7 +277,7 @@
                         const likes = p.likes || 0;
                         blocksHtml += `
                             <div class="border-t pt-4 mt-6 flex justify-between items-center text-sm">
-                                <button onclick="toggleLike('${storyId}', '${p.id}')" class="flex items-center gap-1 text-red-500 font-bold bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-100">
+                                <button onclick="window.toggleLike('${storyId}', '${p.id}')" class="flex items-center gap-1 text-red-500 font-bold bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-100">
                                     ❤️ পছন্দ হয়েছে (${likes})
                                 </button>
                                 <span class="text-xs text-gray-400">পাঠকের মতামত নিচে দিন</span>
@@ -292,7 +287,7 @@
                                 <h4 class="font-bold text-sm mb-2">মন্তব্য করুন:</h4>
                                 <div class="flex gap-2 mb-3">
                                     <input type="text" id="commentInput_${p.id}" placeholder="আপনার মতামত লিখুন..." class="flex-grow p-2 border rounded-lg text-sm">
-                                    <button onclick="addComment('${storyId}', '${p.id}')" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold">পাঠান</button>
+                                    <button onclick="window.addComment('${storyId}', '${p.id}')" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold">পাঠান</button>
                                 </div>
                                 <div id="commentsList_${p.id}" class="space-y-2 max-h-40 overflow-y-auto">
                                     ${(p.comments || []).map(c => `<div class="bg-white p-2 rounded border text-xs text-gray-700">💬 ${c}</div>`).join('')}
@@ -312,11 +307,11 @@
                                 <p class="text-sm text-gray-600 mb-4">এই পার্টটি পড়তে নিচের ৩টি বিজ্ঞাপনের ধাপ সম্পন্ন করুন:</p>
                                 
                                 <div class="space-y-3 mb-4 max-w-md mx-auto">
-                                    <button onclick="completeAdStep(1, '${storyId}', '${p.id}')" id="adBtn_${p.id}_1" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm shadow hover:bg-blue-600">বিজ্ঞাপন ১ খুলুন</button>
-                                    <button onclick="completeAdStep(2, '${storyId}', '${p.id}')" id="adBtn_${p.id}_2" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm shadow opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ২ খুলুন</button>
-                                    <button onclick="completeAdStep(3, '${storyId}', '${p.id}')" id="adBtn_${p.id}_3" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm shadow opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ৩ খুলুন</button>
+                                    <button onclick="window.completeAdStep(1, '${storyId}', '${p.id}')" id="adBtn_${p.id}_1" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm shadow hover:bg-blue-600">বিজ্ঞাপন ১ খুলুন</button>
+                                    <button onclick="window.completeAdStep(2, '${storyId}', '${p.id}')" id="adBtn_${p.id}_2" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm shadow opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ২ খুলুন</button>
+                                    <button onclick="window.completeAdStep(3, '${storyId}', '${p.id}')" id="adBtn_${p.id}_3" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm shadow opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ৩ খুলুন</button>
                                 </div>
-                                <button onclick="unlockPartFeed('${storyId}', '${p.id}')" id="unlockFinalBtn_${p.id}" class="w-full max-w-md bg-green-600 text-white p-3 rounded-lg font-bold text-sm opacity-50 cursor-not-allowed mx-auto block shadow" disabled>পার্ট আনলক করুন</button>
+                                <button onclick="window.unlockPartFeed('${storyId}', '${p.id}')" id="unlockFinalBtn_${p.id}" class="w-full max-w-md bg-green-600 text-white p-3 rounded-lg font-bold text-sm opacity-50 cursor-not-allowed mx-auto block shadow" disabled>পার্ট আনলক করুন</button>
                             </div>
                         `;
                         feedHtml += `</div>`;
@@ -330,6 +325,68 @@
             } catch(e) {
                 contentArea.innerHTML = `<div class="bg-red-100 p-4 rounded text-red-600">ত্রুটি: ${e.message}</div>`;
             }
+        }
+
+        window.toggleLike = async function(storyId, partId) {
+            try {
+                const partRef = doc(db, "stories", storyId, "parts", partId);
+                await updateDoc(partRef, { likes: increment(1) });
+                window.viewStory(storyId);
+            } catch(e) { console.error(e); }
+        }
+
+        window.addComment = async function(storyId, partId) {
+            const input = document.getElementById(`commentInput_${partId}`);
+            const text = input.value.trim();
+            if(!text) return;
+            try {
+                const partRef = doc(db, "stories", storyId, "parts", partId);
+                await updateDoc(partRef, { comments: arrayUnion(text) });
+                input.value = "";
+                window.viewStory(storyId);
+            } catch(e) { alert("কমেন্ট পাঠাতে সমস্যা হয়েছে"); }
+        }
+
+        window.sharePartLink = function(storyId, partId) {
+            const shareUrl = `${window.location.origin}${window.location.pathname}?story=${storyId}&part=${partId}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert('পার্টের ডাইরেক্ট লিংক কপি করা হয়েছে!');
+            }).catch(err => {
+                alert('লিংক কপি করতে সমস্যা হয়েছে: ' + err);
+            });
+        }
+
+        window.completeAdStep = function(step, storyId, partId) {
+            let adUrl = window.adSettings.ad1;
+            if(step === 2) adUrl = window.adSettings.ad2;
+            if(step === 3) adUrl = window.adSettings.ad3;
+
+            const btn = document.getElementById(`adBtn_${partId}_${step}`);
+            btn.setAttribute('disabled', 'true');
+            btn.classList.add('cursor-not-allowed');
+
+            let timeLeft = 10;
+            window.activeAdSession = { step, storyId, partId, timerCompleted: false };
+
+            window.open(adUrl, '_blank');
+
+            const timerInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft > 0) {
+                    btn.innerText = `অপেক্ষা করুন ${timeLeft} সেকেন্ড...`;
+                } else {
+                    clearInterval(timerInterval);
+                    btn.innerText = `বিজ্ঞাপন ${step} দেখা সম্পন্ন হয়েছে। সাইটে ফিরে আসুন ✓`;
+                    if (window.activeAdSession) {
+                        window.activeAdSession.timerCompleted = true;
+                    }
+                }
+            }, 1000);
+        }
+
+        window.unlockPartFeed = function(storyId, partId) {
+            localStorage.setItem(`unlocked_${partId}`, 'true');
+            window.viewStory(storyId);
         }
 
         window.openAdminLogin = function() {
@@ -353,6 +410,263 @@
                 window.loadAdminDashboard();
             } catch (error) {
                 alert('লগইন ব্যর্থ হয়েছে: ' + error.message);
+            }
+        }
+
+        window.loadAdminDashboard = async function() {
+            window.blockCount = 0;
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <div class="bg-white p-6 rounded-xl shadow mb-4">
+                    <h2 class="text-xl font-bold mb-4 text-red-600">অ্যাডমিন ড্যাশবোর্ড</h2>
+                    
+                    <div class="p-4 bg-orange-50 rounded-lg border border-orange-200 mb-6">
+                        <h3 class="font-bold mb-2 text-red-600">📢 বিজ্ঞাপনের লিংক ও নেটওয়ার্ক ম্যানেজমেন্ট</h3>
+                        <div class="space-y-2 text-sm">
+                            <div><label class="font-semibold">বিজ্ঞাপন ১ URL:</label><input type="text" id="ad1_input" value="${window.adSettings.ad1 || ''}" class="w-full p-2 border rounded"></div>
+                            <div><label class="font-semibold">বিজ্ঞাপন ২ URL:</label><input type="text" id="ad2_input" value="${window.adSettings.ad2 || ''}" class="w-full p-2 border rounded"></div>
+                            <div><label class="font-semibold">বিজ্ঞাপন ৩ URL:</label><input type="text" id="ad3_input" value="${window.adSettings.ad3 || ''}" class="w-full p-2 border rounded"></div>
+                            <div><label class="font-semibold">সোশ্যাল বার অফার URL:</label><input type="text" id="social_input" value="${window.adSettings.socialBar || ''}" class="w-full p-2 border rounded"></div>
+                            <button onclick="window.saveAdsConfig()" class="bg-green-600 text-white px-4 py-2 rounded font-bold mt-2">বিজ্ঞাপনের লিংক সেভ করুন</button>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-gray-50 rounded-lg border mb-6">
+                        <h3 class="font-bold mb-2">নতুন গল্প তৈরি করুন</h3>
+                        <input type="text" id="storyTitle" placeholder="গল্পের নাম" class="w-full p-2 border rounded mb-2">
+                        <input type="text" id="storyCategory" placeholder="ক্যাটাগরি" class="w-full p-2 border rounded mb-3">
+                        <button onclick="window.addNewStory()" class="bg-red-600 text-white px-4 py-2 rounded font-bold">গল্প সংরক্ষণ করুন</button>
+                    </div>
+
+                    <div class="p-4 bg-gray-50 rounded-lg border mb-6">
+                        <h3 class="font-bold mb-2 text-red-600">পোস্ট ম্যানেজ বা এডিট করুন</h3>
+                        <select id="manageStorySelect" onchange="window.loadManageParts()" class="w-full p-2 border rounded mb-2">
+                            <option value="">প্রথমে গল্প সিলেক্ট করুন</option>
+                        </select>
+                        <div id="managePartsList" class="space-y-2 mt-3"></div>
+                    </div>
+
+                    <div class="p-4 bg-gray-50 rounded-lg border">
+                        <h3 class="font-bold mb-2">গল্পে নতুন পার্ট/পোস্ট যোগ করুন</h3>
+                        <select id="selectStoryId" class="w-full p-2 border rounded mb-2">
+                            <option value="">গল্প সিলেক্ট করুন</option>
+                        </select>
+                        <input type="number" id="partNumber" placeholder="পার্ট নম্বর (যেমন: 1, 2, 3)" class="w-full p-2 border rounded mb-2">
+                        <input type="text" id="partTitle" placeholder="পার্টের শিরোনাম (ঐচ্ছিক)" class="w-full p-2 border rounded mb-4">
+
+                        <div class="border-t pt-3 mb-3">
+                            <h4 class="font-semibold text-sm mb-2 text-gray-700">গল্পের কনটেন্ট সাজান (লেখা ও ছবি):</h4>
+                            <div id="blocksContainer" class="space-y-3 mb-3"></div>
+                            
+                            <div class="flex gap-2">
+                                <button onclick="window.addTextBlock()" class="text-sm bg-blue-100 text-blue-700 px-3 py-2 rounded-lg font-bold">+ লেখা যোগ করুন</button>
+                                <button onclick="window.addImageBlock()" class="text-sm bg-green-100 text-green-700 px-3 py-2 rounded-lg font-bold">+ ছবি যোগ করুন</button>
+                            </div>
+                        </div>
+
+                        <button onclick="window.addNewPartWithBlocks()" class="w-full bg-red-600 text-white px-4 py-3 rounded-lg font-bold mt-4">সম্পূর্ণ পার্ট পোস্ট করুন</button>
+                    </div>
+                </div>
+            `;
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "stories"));
+                const select1 = document.getElementById('selectStoryId');
+                const select2 = document.getElementById('manageStorySelect');
+                querySnapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const opt = `<option value="${docSnap.id}">${data.title}</option>`;
+                    if(select1) select1.innerHTML += opt;
+                    if(select2) select2.innerHTML += opt;
+                });
+            } catch(e) { console.error(e); }
+
+            window.addTextBlock();
+        }
+
+        window.saveAdsConfig = async function() {
+            const ad1 = document.getElementById('ad1_input').value;
+            const ad2 = document.getElementById('ad2_input').value;
+            const ad3 = document.getElementById('ad3_input').value;
+            const socialBar = document.getElementById('social_input').value;
+
+            try {
+                await setDoc(doc(db, "settings", "ads"), { ad1, ad2, ad3, socialBar });
+                window.adSettings = { ad1, ad2, ad3, socialBar };
+                alert("বিজ্ঞাপনের লিংকসমূহ আপডেট করা হয়েছে!");
+            } catch(e) { alert("ত্রুটি: " + e.message); }
+        }
+
+        window.loadManageParts = async function() {
+            const storyId = document.getElementById('manageStorySelect').value;
+            const container = document.getElementById('managePartsList');
+            if(!storyId) { container.innerHTML = ""; return; }
+            container.innerHTML = "লোড হচ্ছে...";
+
+            try {
+                const partsSnap = await getDocs(collection(db, "stories", storyId, "parts"));
+                let parts = [];
+                partsSnap.forEach(p => parts.push({ id: p.id, ...p.data() }));
+                parts.sort((a, b) => a.partNumber - b.partNumber);
+
+                if(parts.length === 0) {
+                    container.innerHTML = `<p class="text-sm text-gray-500">এই গল্পে কোনো পার্ট নেই।</p>`;
+                    return;
+                }
+
+                let html = "";
+                parts.forEach(p => {
+                    html += `
+                        <div class="bg-white p-3 border rounded flex justify-between items-center text-sm">
+                            <span>Part ${p.partNumber}: ${p.title || 'শিরোনামহীন'}</span>
+                            <div class="flex gap-2">
+                                <button onclick="window.deletePart('${storyId}', '${p.id}')" class="bg-red-600 text-white px-2.5 py-1 rounded text-xs font-bold">ডিলিট</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch(e) {
+                container.innerHTML = `<p class="text-sm text-red-600">ত্রুটি: ${e.message}</p>`;
+            }
+        }
+
+        window.deletePart = async function(storyId, partId) {
+            if(confirm('আপনি কি নিশ্চিতভাবে এই পার্টটি ডিলিট করতে চান?')) {
+                try {
+                    await deleteDoc(doc(db, "stories", storyId, "parts", partId));
+                    alert('পার্ট সফলভাবে ডিলিট করা হয়েছে!');
+                    window.loadManageParts();
+                } catch(e) {
+                    alert('ডিলিট করতে সমস্যা হয়েছে: ' + e.message);
+                }
+            }
+        }
+
+        window.addTextBlock = function() {
+            window.blockCount++;
+            const container = document.getElementById('blocksContainer');
+            const div = document.createElement('div');
+            div.className = "p-3 bg-white border rounded-lg flex flex-col gap-2 relative block-item";
+            div.dataset.type = "text";
+            div.innerHTML = `
+                <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
+                    <span>📝 টেক্সট ব্লক</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
+                </div>
+                <textarea class="block-value w-full p-2 border rounded text-sm" rows="3" placeholder="লেখার অংশটি লিখুন..."></textarea>
+            `;
+            container.appendChild(div);
+        }
+
+        window.addImageBlock = function() {
+            window.blockCount++;
+            const container = document.getElementById('blocksContainer');
+            const div = document.createElement('div');
+            div.className = "p-3 bg-white border rounded-lg flex flex-col gap-2 relative block-item";
+            div.dataset.type = "image";
+            div.innerHTML = `
+                <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
+                    <span>🖼️ ছবি সিলেক্ট করুন</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
+                </div>
+                <input type="file" accept="image/*" onchange="window.handleImageUpload(event, '${window.blockCount}')" class="w-full text-sm border p-2 rounded bg-gray-50">
+                <input type="hidden" id="img_val_${window.blockCount}" class="block-value">
+                <div id="status_${window.blockCount}" class="text-xs text-blue-600 font-semibold mt-1"></div>
+                <div id="preview_${window.blockCount}" class="hidden mt-2">
+                    <img src="" class="max-h-40 rounded shadow border mx-auto">
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        window.handleImageUpload = function(event, blockId) {
+            const file = event.target.files[0];
+            if (file) {
+                const statusDiv = document.getElementById(`status_${blockId}`);
+                statusDiv.innerText = "ছবি অপ্টিমাইজ করা হচ্ছে...";
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const max_size = 400; 
+                        if (width > height) {
+                            if (width > max_size) { height *= max_size / width; width = max_size; }
+                        } else {
+                            if (height > max_size) { width *= max_size / height; height = max_size; }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.3);
+                        
+                        document.getElementById(`img_val_${blockId}`).value = compressedDataUrl;
+                        statusDiv.innerText = "ছবি প্রস্তুত ✓";
+                        
+                        const previewDiv = document.getElementById(`preview_${blockId}`);
+                        previewDiv.querySelector('img').src = compressedDataUrl;
+                        previewDiv.classList.remove('hidden');
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        window.addNewStory = async function() {
+            const title = document.getElementById('storyTitle').value;
+            const category = document.getElementById('storyCategory').value;
+            if(!title) { alert('গল্পের নাম দিন'); return; }
+            try {
+                await addDoc(collection(db, "stories"), { title, category: category || 'সাধারণ', createdAt: new Date() });
+                alert('গল্প সফলভাবে যোগ করা হয়েছে!');
+                window.loadAdminDashboard();
+            } catch(e) { alert('ত্রুটি: ' + e.message); }
+        }
+
+        window.addNewPartWithBlocks = async function() {
+            const storyId = document.getElementById('selectStoryId').value;
+            const partNumber = parseInt(document.getElementById('partNumber').value);
+            const title = document.getElementById('partTitle').value;
+
+            if(!storyId || !partNumber) {
+                alert('গল্প এবং পার্ট নম্বর নির্বাচন করা আবশ্যক!');
+                return;
+            }
+
+            const blockElements = document.querySelectorAll('.block-item');
+            let blocks = [];
+            blockElements.forEach(el => {
+                const type = el.dataset.type;
+                const value = el.querySelector('.block-value').value;
+                if (value.trim() !== '') {
+                    blocks.push({ type, value });
+                }
+            });
+
+            if(blocks.length === 0) {
+                alert('কমপক্ষে একটি লেখা বা ছবি সিলেক্ট করুন!');
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, "stories", storyId, "parts"), {
+                    partNumber,
+                    title: title || '',
+                    blocks: blocks,
+                    likes: 0,
+                    comments: [],
+                    createdAt: new Date()
+                });
+                alert('সফলভাবে পার্ট পোস্ট করা হয়েছে!');
+                window.loadAdminDashboard();
+            } catch(e) {
+                alert('ত্রুটি: ' + e.message);
             }
         }
     </script>
