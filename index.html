@@ -430,15 +430,22 @@
                         </div>
                     </div>
 
-                    <div class="p-4 bg-gray-50 rounded-lg border mb-6">
-                        <h3 class="font-bold mb-2">নতুন গল্প তৈরি করুন</h3>
+                    <div class="p-4 bg-gray-50 rounded-lg border mb-6" id="storyBoxSection">
+                        <h3 class="font-bold mb-2" id="storyBoxHeading">নতুন গল্প তৈরি করুন</h3>
+                        <input type="hidden" id="editingStoryId" value="">
                         <input type="text" id="storyTitle" placeholder="গল্পের নাম" class="w-full p-2 border rounded mb-2">
                         <input type="text" id="storyCategory" placeholder="ক্যাটাগরি" class="w-full p-2 border rounded mb-3">
-                        <button onclick="window.addNewStory()" class="bg-red-600 text-white px-4 py-2 rounded font-bold">গল্প সংরক্ষণ করুন</button>
+                        <button onclick="window.saveOrUpdateStory()" id="storySubmitBtn" class="bg-red-600 text-white px-4 py-2 rounded font-bold">গল্প সংরক্ষণ করুন</button>
+                        <button onclick="window.cancelEditStory()" id="cancelStoryEditBtn" class="bg-gray-500 text-white px-4 py-2 rounded font-bold ml-2 hidden">বাতিল</button>
                     </div>
 
                     <div class="p-4 bg-gray-50 rounded-lg border mb-6">
-                        <h3 class="font-bold mb-2 text-red-600">পোস্ট ম্যানেজ বা এডিট করুন</h3>
+                        <h3 class="font-bold mb-2 text-red-600">গল্প ম্যানেজ বা এডিট করুন (নাম পরিবর্তন বা ডিলিট)</h3>
+                        <div id="manageStoriesList" class="space-y-2 mt-3">লোড হচ্ছে...</div>
+                    </div>
+
+                    <div class="p-4 bg-gray-50 rounded-lg border mb-6">
+                        <h3 class="font-bold mb-2 text-red-600">পার্ট ম্যানেজ বা এডিট করুন</h3>
                         <select id="manageStorySelect" onchange="window.loadManageParts()" class="w-full p-2 border rounded mb-2">
                             <option value="">প্রথমে গল্প সিলেক্ট করুন</option>
                         </select>
@@ -474,12 +481,28 @@
                 const querySnapshot = await getDocs(collection(db, "stories"));
                 const select1 = document.getElementById('selectStoryId');
                 const select2 = document.getElementById('manageStorySelect');
+                const storiesListContainer = document.getElementById('manageStoriesList');
+                
+                let storiesHtml = "";
                 querySnapshot.forEach(docSnap => {
                     const data = docSnap.data();
                     const opt = `<option value="${docSnap.id}">${data.title}</option>`;
                     if(select1) select1.innerHTML += opt;
                     if(select2) select2.innerHTML += opt;
+                    
+                    storiesHtml += `
+                        <div class="bg-white p-3 border rounded flex justify-between items-center text-sm">
+                            <span><b>${data.title}</b> (${data.category || 'সাধারণ'})</span>
+                            <div class="flex gap-2">
+                                <button onclick="window.editStory('${docSnap.id}', '${data.title}', '${data.category || ''}')" class="bg-blue-600 text-white px-2.5 py-1 rounded text-xs font-bold">এডিট নাম</button>
+                                <button onclick="window.deleteStory('${docSnap.id}')" class="bg-red-600 text-white px-2.5 py-1 rounded text-xs font-bold">ডিলিট গল্প</button>
+                            </div>
+                        </div>
+                    `;
                 });
+                if(storiesHtml === "") storiesHtml = `<p class="text-sm text-gray-500">কোনো গল্প পাওয়া যায়নি।</p>`;
+                storiesListContainer.innerHTML = storiesHtml;
+
             } catch(e) { console.error(e); }
 
             window.addTextBlock();
@@ -496,6 +519,58 @@
                 window.adSettings = { ad1, ad2, ad3, socialBar };
                 alert("বিজ্ঞাপনের লিংকসমূহ আপডেট করা হয়েছে!");
             } catch(e) { alert("ত্রুটি: " + e.message); }
+        }
+
+        window.editStory = function(storyId, title, category) {
+            document.getElementById('editingStoryId').value = storyId;
+            document.getElementById('storyTitle').value = title;
+            document.getElementById('storyCategory').value = category === 'undefined' ? '' : category;
+            
+            document.getElementById('storyBoxHeading').innerText = "গল্পের নাম ও ক্যাটাগরি এডিট করুন";
+            document.getElementById('storySubmitBtn').innerText = "আপডেট করুন";
+            document.getElementById('cancelStoryEditBtn').classList.remove('hidden');
+
+            document.getElementById('storyBoxSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        window.cancelEditStory = function() {
+            document.getElementById('editingStoryId').value = "";
+            document.getElementById('storyTitle').value = "";
+            document.getElementById('storyCategory').value = "";
+            
+            document.getElementById('storyBoxHeading').innerText = "নতুন গল্প তৈরি করুন";
+            document.getElementById('storySubmitBtn').innerText = "গল্প সংরক্ষণ করুন";
+            document.getElementById('cancelStoryEditBtn').classList.add('hidden');
+        }
+
+        window.saveOrUpdateStory = async function() {
+            const title = document.getElementById('storyTitle').value;
+            const category = document.getElementById('storyCategory').value;
+            const editingStoryId = document.getElementById('editingStoryId').value;
+
+            if(!title) { alert('গল্পের নাম দিন'); return; }
+            try {
+                if(editingStoryId) {
+                    await updateDoc(doc(db, "stories", editingStoryId), { title, category: category || 'সাধারণ' });
+                    alert('গল্পের নাম সফলভাবে আপডেট করা হয়েছে!');
+                } else {
+                    await addDoc(collection(db, "stories"), { title, category: category || 'সাধারণ', createdAt: new Date() });
+                    alert('গল্প সফলভাবে যোগ করা হয়েছে!');
+                }
+                window.loadAdminDashboard();
+            } catch(e) { alert('ত্রুটি: ' + e.message); }
+        }
+
+        window.deleteStory = async function(storyId) {
+            if(confirm('সতর্কতা: এই গল্পটি ডিলিট করলে এর ভেତরের সব পার্টও মুছে যেতে পারে। আপনি কি নিশ্চিত?')) {
+                try {
+                    await deleteDoc(doc(db, "stories", storyId));
+                    alert('গল্প সফলভাবে ডিলিট করা হয়েছে!');
+                    window.loadAdminDashboard();
+                } catch(e) {
+                    alert('ডিলিট করতে সমস্যা হয়েছে: ' + e.message);
+                }
+            }
         }
 
         window.loadManageParts = async function() {
@@ -684,17 +759,6 @@
             }
         }
 
-        window.addNewStory = async function() {
-            const title = document.getElementById('storyTitle').value;
-            const category = document.getElementById('storyCategory').value;
-            if(!title) { alert('গল্পের নাম দিন'); return; }
-            try {
-                await addDoc(collection(db, "stories"), { title, category: category || 'সাধারণ', createdAt: new Date() });
-                alert('গল্প সফলভাবে যোগ করা হয়েছে!');
-                window.loadAdminDashboard();
-            } catch(e) { alert('ত্রুটি: ' + e.message); }
-        }
-
         window.saveOrUpdatePart = async function() {
             const storyId = document.getElementById('selectStoryId').value;
             const partNumber = parseInt(document.getElementById('partNumber').value);
@@ -723,7 +787,6 @@
 
             try {
                 if(editingPartId) {
-                    // Update existing part
                     const partRef = doc(db, "stories", storyId, "parts", editingPartId);
                     await updateDoc(partRef, {
                         partNumber,
@@ -732,7 +795,6 @@
                     });
                     alert('পার্ট সফলভাবে আপডেট করা হয়েছে!');
                 } else {
-                    // Add new part
                     await addDoc(collection(db, "stories", storyId, "parts"), {
                         partNumber,
                         title: title || '',
