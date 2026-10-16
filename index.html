@@ -34,7 +34,6 @@
     </header>
 
     <main class="max-w-3xl mx-auto p-4 mb-16">
-        
         <div id="continueReadingBox" class="hidden mb-4 bg-gradient-to-r from-red-500 to-orange-500 text-white p-3 rounded-xl shadow flex justify-between items-center">
             <div class="text-xs md:text-sm">
                 <span class="font-bold">📖 শেষ যেখানে পড়া ছেড়েছিলেন:</span> <span id="continueTitle" class="underline"></span>
@@ -363,8 +362,6 @@
             btn.classList.add('cursor-not-allowed');
 
             let timeLeft = 10;
-            window.activeAdSession = { step, storyId, partId, timerCompleted: false };
-
             window.open(adUrl, '_blank');
 
             const timerInterval = setInterval(() => {
@@ -373,9 +370,27 @@
                     btn.innerText = `অপেক্ষা করুন ${timeLeft} সেকেন্ড...`;
                 } else {
                     clearInterval(timerInterval);
-                    btn.innerText = `বিজ্ঞাপন ${step} দেখা সম্পন্ন হয়েছে। সাইটে ফিরে আসুন ✓`;
-                    if (window.activeAdSession) {
-                        window.activeAdSession.timerCompleted = true;
+                    btn.innerText = `বিজ্ঞাপন ${step} সম্পন্ন হয়েছে ✓`;
+                    
+                    // পরবর্তী ধাপ আনলক করা (১ নম্বর হলে ২ চালু হবে, ২ হলে ৩ চালু হবে)
+                    if (step === 1) {
+                        const nextBtn = document.getElementById(`adBtn_${partId}_2`);
+                        if (nextBtn) {
+                            nextBtn.removeAttribute('disabled');
+                            nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
+                    } else if (step === 2) {
+                        const nextBtn = document.getElementById(`adBtn_${partId}_3`);
+                        if (nextBtn) {
+                            nextBtn.removeAttribute('disabled');
+                            nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
+                    } else if (step === 3) {
+                        const finalBtn = document.getElementById(`unlockFinalBtn_${partId}`);
+                        if (finalBtn) {
+                            finalBtn.removeAttribute('disabled');
+                            finalBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
                     }
                 }
             }, 1000);
