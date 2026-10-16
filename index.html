@@ -303,11 +303,11 @@
                                 <p class="text-sm text-gray-600 mb-4">এই পার্টটি পড়তে নিচের ৩টি বিজ্ঞাপনের ধাপ সম্পন্ন করুন:</p>
                                 
                                 <div class="space-y-3 mb-4 max-w-md mx-auto">
-                                    <button onclick="window.completeAdStep(1, '${storyId}', '${p.id}')" id="adBtn_${p.id}_1" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm shadow hover:bg-blue-600">বিজ্ঞাপন ১ খুলুন</button>
-                                    <button onclick="window.completeAdStep(2, '${storyId}', '${p.id}')" id="adBtn_${p.id}_2" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm shadow opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ২ খুলুন</button>
-                                    <button onclick="window.completeAdStep(3, '${storyId}', '${p.id}')" id="adBtn_${p.id}_3" class="w-full bg-blue-500 text-white p-3 rounded-lg font-bold text-sm shadow opacity-50 cursor-not-allowed" disabled>বিজ্ঞাপন ৩ খুলুন</button>
+                                    <button onclick="window.completeAdStep(1, '${storyId}', '${p.id}')" id="adBtn_${p.id}_1" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold text-sm shadow hover:bg-blue-700">বিজ্ঞাপন ১ খুলুন</button>
+                                    <button onclick="window.completeAdStep(2, '${storyId}', '${p.id}')" id="adBtn_${p.id}_2" class="w-full bg-gray-400 text-white p-3 rounded-lg font-bold text-sm shadow cursor-not-allowed" disabled>বিজ্ঞাপন ২ খুলুন (লক)</button>
+                                    <button onclick="window.completeAdStep(3, '${storyId}', '${p.id}')" id="adBtn_${p.id}_3" class="w-full bg-gray-400 text-white p-3 rounded-lg font-bold text-sm shadow cursor-not-allowed" disabled>বিজ্ঞাপন ৩ খুলুন (লক)</button>
                                 </div>
-                                <button onclick="window.unlockPartFeed('${storyId}', '${p.id}')" id="unlockFinalBtn_${p.id}" class="w-full max-w-md bg-green-600 text-white p-3 rounded-lg font-bold text-sm opacity-50 cursor-not-allowed mx-auto block shadow" disabled>পার্ট আনলক করুন</button>
+                                <button onclick="window.unlockPartFeed('${storyId}', '${p.id}')" id="unlockFinalBtn_${p.id}" class="w-full max-w-md bg-gray-400 text-white p-3 rounded-lg font-bold text-sm cursor-not-allowed mx-auto block shadow" disabled>পার্ট আনলক করুন (লক)</button>
                             </div>
                         `;
                         feedHtml += `</div>`;
@@ -358,38 +358,48 @@
             if(step === 3) adUrl = window.adSettings.ad3;
 
             const btn = document.getElementById(`adBtn_${partId}_${step}`);
-            btn.setAttribute('disabled', 'true');
-            btn.classList.add('cursor-not-allowed');
+            btn.disabled = true;
+            btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            btn.classList.add('bg-yellow-500', 'cursor-wait');
 
-            let timeLeft = 10;
+            // নতুন ট্যাবে বিজ্ঞাপন ওপেন করা
             window.open(adUrl, '_blank');
 
+            let timeLeft = 10;
             const timerInterval = setInterval(() => {
                 timeLeft--;
                 if (timeLeft > 0) {
                     btn.innerText = `অপেক্ষা করুন ${timeLeft} সেকেন্ড...`;
                 } else {
                     clearInterval(timerInterval);
-                    btn.innerText = `বিজ্ঞাপন ${step} সম্পন্ন হয়েছে ✓`;
-                    
-                    // পরবর্তী ধাপ আনলক করা (১ নম্বর হলে ২ চালু হবে, ২ হলে ৩ চালু হবে)
+                    btn.innerText = `বিজ্ঞাপন ${step} সম্পন্ন হয়েছে ✓`;
+                    btn.classList.remove('bg-yellow-500', 'cursor-wait');
+                    btn.classList.add('bg-green-600', 'cursor-default');
+
+                    // পরবর্তী বাটনটি সক্রিয় করা
                     if (step === 1) {
                         const nextBtn = document.getElementById(`adBtn_${partId}_2`);
                         if (nextBtn) {
-                            nextBtn.removeAttribute('disabled');
-                            nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                            nextBtn.disabled = false;
+                            nextBtn.innerText = "বিজ্ঞাপন ২ খুলুন";
+                            nextBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                            nextBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
                         }
                     } else if (step === 2) {
                         const nextBtn = document.getElementById(`adBtn_${partId}_3`);
                         if (nextBtn) {
-                            nextBtn.removeAttribute('disabled');
-                            nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                            nextBtn.disabled = false;
+                            nextBtn.innerText = "বিজ্ঞাপন ৩ খুলুন";
+                            nextBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                            nextBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
                         }
                     } else if (step === 3) {
                         const finalBtn = document.getElementById(`unlockFinalBtn_${partId}`);
                         if (finalBtn) {
-                            finalBtn.removeAttribute('disabled');
-                            finalBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                            finalBtn.disabled = false;
+                            finalBtn.innerText = "পার্ট আনলক করুন 🔓";
+                            finalBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                            finalBtn.classList.add('bg-green-600', 'hover:bg-green-700');
                         }
                     }
                 }
