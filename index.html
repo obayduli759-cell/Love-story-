@@ -99,7 +99,7 @@
 
             fetchAdSettings().then(() => {
                 if (isTgRedirect === 'true') {
-                    renderTelegramRedirectPage();
+                    executeDirectAdThenTg();
                 } else if (storyId && partId) {
                     localStorage.setItem(`unlocked_${partId}`, 'true');
                     window.viewStory(storyId);
@@ -132,38 +132,51 @@
             if(lastStory) window.viewStory(lastStory);
         }
 
-        function renderTelegramRedirectPage() {
+        // ফার্স্ট এড ওপেন করার পর সরাসরি টেলিগ্রামে নিয়ে যাওয়ার ফাংশন
+        function executeDirectAdThenTg() {
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `
-                <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md mx-auto my-10 border border-gray-100">
-                    <div class="relative w-16 h-16 mx-auto mb-4">
-                        <div class="absolute top-0 left-0 w-full h-full border-4 border-blue-200 rounded-full animate-ping"></div>
-                        <div class="relative w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <div id="autoTouchArea" class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md mx-auto my-10 border border-gray-100 cursor-pointer">
+                    <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold animate-bounce">
+                        📲
                     </div>
-                    <h2 class="text-xl font-bold text-gray-800 mb-2">টেলিগ্রাম চ্যানেলে নিয়ে যাওয়া হচ্ছে...</h2>
-                    <p class="text-sm text-gray-500 mb-6">অনুগ্রহ করে কয়েক সেকেন্ড অপেক্ষা করুন। স্বয়ংক্রিয়ভাবে ওপেন না হলে নিচের বাটনে ক্লিক করুন।</p>
-                    <a id="redirectTgBtn" href="${window.adSettings.telegramChannel}" target="_blank" class="block w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:bg-blue-700 transition duration-200 text-sm mb-3">
-                        📲 সরাসরি টেলিগ্রাম চ্যানেলে যোগ দিন &rarr;
-                    </a>
-                    <button onclick="window.shareTelegramRedirectLink()" class="w-full bg-gray-100 text-gray-700 font-bold py-2 px-4 rounded-xl hover:bg-gray-200 text-xs flex items-center justify-center gap-1">
-                        🔗 এই লিংকটি শেয়ার করুন
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">টেলিগ্রাম চ্যানেলে রিডাইরেক্ট হচ্ছে...</h2>
+                    <p class="text-sm text-gray-500 mb-6">বিজ্ঞাপন ওপেন হলে অনুগ্রহ করে অপেক্ষা করুন, টেলিগ্রাম স্বয়ংক্রিয়ভাবে খুলে যাবে।</p>
+                    
+                    <button id="directTgBtn" class="w-full bg-blue-600 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg hover:bg-blue-700 transition duration-200 text-base mb-3 flex items-center justify-center gap-2">
+                        <span>🚀 টেলিগ্রাম চ্যানেল খুলুন</span>
                     </button>
                 </div>
             `;
 
-            try {
+            let hasTriggered = false;
+
+            function runAdAndRedirect() {
+                if (hasTriggered) return;
+                hasTriggered = true;
+
+                // ১. ফার্স্ট স্মার্টলিংক (বিজ্ঞাপন) নতুন ট্যাবে খুলবে
                 window.open(window.adSettings.tgSmartLink, '_blank');
-            } catch (e) {
-                console.log("Pop-up blocked");
+
+                // ২. ০.৫ সেকেন্ডের মধ্যে মূল ট্যাবে টেলিগ্রাম চ্যানেল খুলবে
+                setTimeout(() => {
+                    window.location.href = window.adSettings.telegramChannel;
+                }, 500);
             }
 
-            setTimeout(() => {
-                window.location.href = window.adSettings.telegramChannel;
-            }, 1500);
+            // ব্যবহারকারী স্ক্রিনের বা বাটনের যেকোনো জায়গায় টাচ করলে এড + টেলিগ্রাম ওপেন হবে
+            document.getElementById('autoTouchArea').addEventListener('click', runAdAndRedirect);
+            document.getElementById('directTgBtn').addEventListener('click', runAdAndRedirect);
 
-            document.getElementById('redirectTgBtn').addEventListener('click', () => {
-                window.open(window.adSettings.tgSmartLink, '_blank');
-            });
+            // অটোমেটিক চেষ্টা করা
+            setTimeout(() => {
+                try {
+                    const popup = window.open(window.adSettings.tgSmartLink, '_blank');
+                    if (popup) {
+                        window.location.href = window.adSettings.telegramChannel;
+                    }
+                } catch(e) {}
+            }, 300);
         }
 
         window.loadHome = async function() {
