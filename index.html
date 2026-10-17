@@ -99,7 +99,7 @@
 
             fetchAdSettings().then(() => {
                 if (isTgRedirect === 'true') {
-                    executeAdWithTenSecTimer();
+                    renderTelegramRedirectUI();
                 } else if (storyId && partId) {
                     localStorage.setItem(`unlocked_${partId}`, 'true');
                     window.viewStory(storyId);
@@ -132,65 +132,55 @@
             if(lastStory) window.viewStory(lastStory);
         }
 
-        // ১০ সেকেন্ডের বিজ্ঞাপনের কাউন্টডাউন এবং টেলিকম রিডাইরেক্ট ফাংশন
-        function executeAdWithTenSecTimer() {
+        // গ্যারান্টিযুক্ত বিজ্ঞাপন ও টাইমার সিস্টেম
+        function renderTelegramRedirectUI() {
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `
-                <div id="clickAnywhere" class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md mx-auto my-12 border border-gray-100 cursor-pointer">
-                    <div class="w-20 h-20 bg-gradient-to-tr from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                        <span id="countdownDisplay" class="text-3xl font-extrabold">10</span>
+                <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md mx-auto my-10 border border-gray-100">
+                    <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl font-bold">
+                        📢
                     </div>
-                    <h2 class="text-xl font-bold text-gray-800 mb-2">বিজ্ঞাপন খোলা হচ্ছে...</h2>
-                    <p id="statusMsg" class="text-sm text-gray-500 mb-6">বিজ্ঞাপন দেখার ১০ সেকেন্ড পর আপনাকে সরাসরি টেলিগ্রাম চ্যানেলে নিয়ে যাওয়া হবে।</p>
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">অফিশিয়াল টেলিগ্রাম চ্যানেল</h2>
+                    <p class="text-sm text-gray-500 mb-6">বিজ্ঞাপনটি দেখুন এবং ১০ সেকেন্ড অপেক্ষা করার পর টেলিগ্রামে জয়েন করুন।</p>
                     
-                    <button id="actionBtn" class="w-full bg-blue-600 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg hover:bg-blue-700 transition duration-200 text-base">
-                        অপেক্ষা করুন (১০ সেকেন্ড)...
-                    </button>
+                    <a id="directAdBtn" href="${window.adSettings.tgSmartLink}" target="_blank" onclick="window.startTgTimer()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:opacity-95 transition text-base mb-3 block text-center">
+                        📲 বিজ্ঞাপন খুলুন ও টেলিগ্রামে যান
+                    </a>
+                    
+                    <div id="timerContainer" class="hidden mt-4">
+                        <div class="text-sm text-gray-600 font-semibold mb-1">বিজ্ঞাপন দেখা হলে ১০ সেকেন্ড পর টেলিগ্রামে নিয়ে যাবে:</div>
+                        <div id="countdownBox" class="text-3xl font-extrabold text-blue-600">১০ সেকেন্ড</div>
+                    </div>
                 </div>
             `;
+        }
 
-            let executed = false;
-            let timeLeft = 10;
-            let timerInterval = null;
+        window.startTgTimer = function() {
+            const btn = document.getElementById('directAdBtn');
+            const timerContainer = document.getElementById('timerContainer');
+            const countdownBox = document.getElementById('countdownBox');
 
-            function startCountdown() {
-                if (executed) return;
-                executed = true;
-
-                // ১. ফার্স্ট বিজ্ঞাপন (Smart Link) নতুন ট্যাবে খোলা
-                try {
-                    window.open(window.adSettings.tgSmartLink, '_blank');
-                } catch(e) {}
-
-                // ২. ১০ সেকেন্ডের কাউন্টডাউন শুরু
-                timerInterval = setInterval(() => {
-                    timeLeft--;
-                    const countEl = document.getElementById('countdownDisplay');
-                    const btnEl = document.getElementById('actionBtn');
-
-                    if (countEl) countEl.innerText = timeLeft;
-                    if (btnEl) btnEl.innerText = `অপেক্ষা করুন (${timeLeft} সেকেন্ড)...`;
-
-                    if (timeLeft <= 0) {
-                        clearInterval(timerInterval);
-                        if (btnEl) {
-                            btnEl.innerText = "টেলিগ্রামে নিয়ে যাওয়া হচ্ছে... 🚀";
-                            btnEl.classList.remove('bg-blue-600');
-                            btnEl.classList.add('bg-green-600');
-                        }
-                        // ৩. ১০ সেকেন্ড পর টেলিগ্রামে নিয়ে যাওয়া
-                        window.location.href = window.adSettings.telegramChannel;
-                    }
-                }, 1000);
+            if(btn) {
+                btn.style.pointerEvents = "none";
+                btn.classList.remove('from-blue-600', 'to-indigo-600');
+                btn.classList.add('bg-gray-400');
+                btn.innerText = "বিজ্ঞাপন খোলা হয়েছে...";
             }
+            
+            if (timerContainer) timerContainer.classList.remove('hidden');
 
-            // ইউজার ক্লিকের মাধ্যমে নিশ্চিত রান
-            document.getElementById('clickAnywhere').addEventListener('click', startCountdown);
+            let timeLeft = 10;
+            const interval = setInterval(() => {
+                timeLeft--;
+                if (countdownBox) countdownBox.innerText = `${timeLeft} সেকেন্ড`;
+                if (btn) btn.innerText = `অপেক্ষা করুন (${timeLeft} সেকেন্ড)...`;
 
-            // অটোমেটিক চালু করার ট্রাই
-            setTimeout(() => {
-                startCountdown();
-            }, 300);
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    if (btn) btn.innerText = "টেলিগ্রামে প্রবেশ করা হচ্ছে...";
+                    window.location.href = window.adSettings.telegramChannel;
+                }
+            }, 1000);
         }
 
         window.loadHome = async function() {
