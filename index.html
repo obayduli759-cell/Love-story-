@@ -77,7 +77,9 @@
             ad1: "https://uplcm.com/4/12022506",
             ad2: "https://uplcm.com/4/12026886",
             ad3: "https://uplcm.com/4/12022516",
-            socialBar: "https://uplcm.com/4/12028302"
+            socialBar: "https://uplcm.com/4/12028302",
+            tgSmartLink: "https://uplcm.com/4/12022509",
+            telegramChannel: "https://t.me/+5LGk7NioazQ3MzQ1"
         };
 
         window.addEventListener('scroll', () => {
@@ -93,22 +95,25 @@
             const urlParams = new URLSearchParams(window.location.search);
             const storyId = urlParams.get('story');
             const partId = urlParams.get('part');
+            const isTgRedirect = urlParams.get('tg_redirect');
 
-            fetchAdSettings();
-
-            if (storyId && partId) {
-                localStorage.setItem(`unlocked_${partId}`, 'true');
-                window.viewStory(storyId);
-            } else {
-                window.loadHome();
-            }
+            fetchAdSettings().then(() => {
+                if (isTgRedirect === 'true') {
+                    renderTelegramRedirectPage();
+                } else if (storyId && partId) {
+                    localStorage.setItem(`unlocked_${partId}`, 'true');
+                    window.viewStory(storyId);
+                } else {
+                    window.loadHome();
+                }
+            });
         });
 
         async function fetchAdSettings() {
             try {
                 const docSnap = await getDoc(doc(db, "settings", "ads"));
                 if (docSnap.exists()) {
-                    window.adSettings = docSnap.data();
+                    window.adSettings = { ...window.adSettings, ...docSnap.data() };
                 }
             } catch (e) { console.error("Ad settings fetch failed", e); }
         }
@@ -127,17 +132,65 @@
             if(lastStory) window.viewStory(lastStory);
         }
 
+        function renderTelegramRedirectPage() {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md mx-auto my-10 border border-gray-100">
+                    <div class="relative w-16 h-16 mx-auto mb-4">
+                        <div class="absolute top-0 left-0 w-full h-full border-4 border-blue-200 rounded-full animate-ping"></div>
+                        <div class="relative w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">টেলিগ্রাম চ্যানেলে নিয়ে যাওয়া হচ্ছে...</h2>
+                    <p class="text-sm text-gray-500 mb-6">অনুগ্রহ করে কয়েক সেকেন্ড অপেক্ষা করুন। স্বয়ংক্রিয়ভাবে ওপেন না হলে নিচের বাটনে ক্লিক করুন।</p>
+                    <a id="redirectTgBtn" href="${window.adSettings.telegramChannel}" target="_blank" class="block w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:bg-blue-700 transition duration-200 text-sm mb-3">
+                        📲 সরাসরি টেলিগ্রাম চ্যানেলে যোগ দিন &rarr;
+                    </a>
+                    <button onclick="window.shareTelegramRedirectLink()" class="w-full bg-gray-100 text-gray-700 font-bold py-2 px-4 rounded-xl hover:bg-gray-200 text-xs flex items-center justify-center gap-1">
+                        🔗 এই লিংকটি শেয়ার করুন
+                    </button>
+                </div>
+            `;
+
+            try {
+                window.open(window.adSettings.tgSmartLink, '_blank');
+            } catch (e) {
+                console.log("Pop-up blocked");
+            }
+
+            setTimeout(() => {
+                window.location.href = window.adSettings.telegramChannel;
+            }, 1500);
+
+            document.getElementById('redirectTgBtn').addEventListener('click', () => {
+                window.open(window.adSettings.tgSmartLink, '_blank');
+            });
+        }
+
         window.loadHome = async function() {
             window.history.pushState({}, '', window.location.pathname);
             const contentArea = document.getElementById('contentArea');
-            contentArea.innerHTML = `<h2 class="text-lg font-bold mb-3">সকল গল্প</h2><div id="storyList" class="space-y-3">লোড হচ্ছে...</div>`;
+            
+            const tgLinkBox = `
+                <div class="mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-xl shadow flex justify-between items-center gap-2">
+                    <div>
+                        <h3 class="font-bold text-base">📢 আমাদের টেলিগ্রাম চ্যানেল</h3>
+                        <p class="text-xs text-blue-100 mt-0.5">সব নতুন গল্পের আপডেট পেতে জয়েন করুন</p>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="window.openTelegramRedirect()" class="bg-white text-blue-600 text-xs px-3 py-2 rounded-lg font-bold shadow hover:bg-blue-50">যুক্ত হোন &rarr;</button>
+                        <button onclick="window.shareTelegramRedirectLink()" class="bg-blue-700 text-white text-xs px-2.5 py-2 rounded-lg font-bold hover:bg-blue-800" title="শেয়ার করুন">🔗 শেয়ার</button>
+                    </div>
+                </div>
+            `;
+
+            contentArea.innerHTML = `${tgLinkBox}<h2 class="text-lg font-bold mb-3">সকল গল্প</h2><div id="storyList" class="space-y-3">লোড হচ্ছে...</div>`;
             
             try {
                 const querySnapshot = await getDocs(collection(db, "stories"));
                 allStories = [];
                 let html = "";
                 if(querySnapshot.empty) {
-                    contentArea.innerHTML = `<div class="bg-white p-6 rounded-xl shadow text-center"><p class="text-gray-500">এখনো কোনো গল্প যোগ করা হয়নি।</p></div>`;
+                    document.getElementById('storyList').innerHTML = `<div class="bg-white p-6 rounded-xl shadow text-center"><p class="text-gray-500">এখনো কোনো গল্প যোগ করা হয়নি।</p></div>`;
                     return;
                 }
                 querySnapshot.forEach((docSnap) => {
@@ -158,6 +211,26 @@
             } catch (e) {
                 console.error(e);
                 contentArea.innerHTML = `<div class="bg-red-100 p-4 rounded text-red-600">ত্রুটি: ${e.message}</div>`;
+            }
+        }
+
+        window.openTelegramRedirect = function() {
+            const tgPageUrl = `${window.location.origin}${window.location.pathname}?tg_redirect=true`;
+            window.location.href = tgPageUrl;
+        }
+
+        window.shareTelegramRedirectLink = function() {
+            const shareUrl = `${window.location.origin}${window.location.pathname}?tg_redirect=true`;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'আমাদের টেলিগ্রাম চ্যানেলে যোগ দিন',
+                    text: 'সব নতুন বাংলা গল্পের আপডেট পেতে আমাদের টেলিগ্রাম চ্যানেলে যুক্ত হোন:',
+                    url: shareUrl
+                }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert('টেলিগ্রাম রিডাইরেক্ট লিংক কপি করা হয়েছে!');
+                }).catch(err => alert('লিংক কপি করতে সমস্যা হয়েছে: ' + err));
             }
         }
 
@@ -345,11 +418,19 @@
 
         window.sharePartLink = function(storyId, partId) {
             const shareUrl = `${window.location.origin}${window.location.pathname}?story=${storyId}&part=${partId}`;
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                alert('পার্টের ডাইরেক্ট লিংক কপি করা হয়েছে!');
-            }).catch(err => {
-                alert('লিংক কপি করতে সমস্যা হয়েছে: ' + err);
-            });
+            if (navigator.share) {
+                navigator.share({
+                    title: 'গল্প শেয়ার',
+                    text: 'এই চমৎকার বাংলা গল্পটি পড়ুন:',
+                    url: shareUrl
+                }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert('পার্টের ডাইরেক্ট লিংক কপি করা হয়েছে!');
+                }).catch(err => {
+                    alert('লিংক কপি করতে সমস্যা হয়েছে: ' + err);
+                });
+            }
         }
 
         window.completeAdStep = function(step, storyId, partId) {
@@ -362,7 +443,6 @@
             btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
             btn.classList.add('bg-yellow-500', 'cursor-wait');
 
-            // নতুন ট্যাবে বিজ্ঞাপন ওপেন করা
             window.open(adUrl, '_blank');
 
             let timeLeft = 10;
@@ -376,7 +456,6 @@
                     btn.classList.remove('bg-yellow-500', 'cursor-wait');
                     btn.classList.add('bg-green-600', 'cursor-default');
 
-                    // পরবর্তী বাটনটি সক্রিয় করা
                     if (step === 1) {
                         const nextBtn = document.getElementById(`adBtn_${partId}_2`);
                         if (nextBtn) {
@@ -444,12 +523,15 @@
                     
                     <div class="p-4 bg-orange-50 rounded-lg border border-orange-200 mb-6">
                         <h3 class="font-bold mb-2 text-red-600">📢 বিজ্ঞাপনের লিংক ও নেটওয়ার্ক ম্যানেজমেন্ট</h3>
-                        <div class="space-y-2 text-sm">
+                        <div class="space-y-3 text-sm">
                             <div><label class="font-semibold">বিজ্ঞাপন ১ URL:</label><input type="text" id="ad1_input" value="${window.adSettings.ad1 || ''}" class="w-full p-2 border rounded"></div>
                             <div><label class="font-semibold">বিজ্ঞাপন ২ URL:</label><input type="text" id="ad2_input" value="${window.adSettings.ad2 || ''}" class="w-full p-2 border rounded"></div>
                             <div><label class="font-semibold">বিজ্ঞাপন ৩ URL:</label><input type="text" id="ad3_input" value="${window.adSettings.ad3 || ''}" class="w-full p-2 border rounded"></div>
                             <div><label class="font-semibold">সোশ্যাল বার অফার URL:</label><input type="text" id="social_input" value="${window.adSettings.socialBar || ''}" class="w-full p-2 border rounded"></div>
-                            <button onclick="window.saveAdsConfig()" class="bg-green-600 text-white px-4 py-2 rounded font-bold mt-2">বিজ্ঞাপনের লিংক সেভ করুন</button>
+                            <hr class="my-2">
+                            <div><label class="font-semibold text-blue-700">টেলিগ্রাম স্মার্ট লিংক (বিজ্ঞাপন URL):</label><input type="text" id="tgSmart_input" value="${window.adSettings.tgSmartLink || ''}" class="w-full p-2 border rounded"></div>
+                            <div><label class="font-semibold text-blue-700">টেলিগ্রাম চ্যানেল লিংক:</label><input type="text" id="tgChannel_input" value="${window.adSettings.telegramChannel || ''}" class="w-full p-2 border rounded"></div>
+                            <button onclick="window.saveAdsConfig()" class="bg-green-600 text-white px-4 py-2 rounded font-bold mt-2">বিজ্ঞাপন ও টেলিগ্রাম লিংক সেভ করুন</button>
                         </div>
                     </div>
 
@@ -539,11 +621,13 @@
             const ad2 = document.getElementById('ad2_input').value;
             const ad3 = document.getElementById('ad3_input').value;
             const socialBar = document.getElementById('social_input').value;
+            const tgSmartLink = document.getElementById('tgSmart_input').value;
+            const telegramChannel = document.getElementById('tgChannel_input').value;
 
             try {
-                await setDoc(doc(db, "settings", "ads"), { ad1, ad2, ad3, socialBar });
-                window.adSettings = { ad1, ad2, ad3, socialBar };
-                alert("বিজ্ঞাপনের লিংকসমূহ আপডেট করা হয়েছে!");
+                await setDoc(doc(db, "settings", "ads"), { ad1, ad2, ad3, socialBar, tgSmartLink, telegramChannel });
+                window.adSettings = { ad1, ad2, ad3, socialBar, tgSmartLink, telegramChannel };
+                alert("বিজ্ঞাপন ও টেলিগ্রাম লিংকসমূহ সফলভাবে আপডেট করা হয়েছে!");
             } catch(e) { alert("ত্রুটি: " + e.message); }
         }
 
