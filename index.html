@@ -18,13 +18,21 @@
             z-index: 100;
             transition: width 0.1s ease-out;
         }
+        .pulse-btn {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.03); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
     <div id="readingProgress"></div>
 
-    <header class="bg-white shadow-md sticky top-0 z-50">
+    <header id="mainHeader" class="bg-white shadow-md sticky top-0 z-50">
         <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
             <h1 class="text-xl font-bold text-red-600 cursor-pointer flex items-center gap-1" onclick="window.loadHome()">📖 বাংলা গল্প</h1>
             <div id="headerRight" class="flex items-center gap-2">
@@ -41,7 +49,7 @@
             <button onclick="window.resumeReading()" class="bg-white text-red-600 text-xs px-3 py-1.5 rounded-lg font-bold shadow hover:bg-gray-100">পড়া চালিয়ে যান &rarr;</button>
         </div>
 
-        <div class="mb-4">
+        <div id="searchBox" class="mb-4">
             <input type="text" id="searchInput" oninput="window.handleSearch()" placeholder="গল্পের নাম বা কীওয়ার্ড দিয়ে খুঁজুন..." class="w-full p-3 bg-white border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500">
         </div>
 
@@ -74,12 +82,19 @@
         window.currentFontSize = 18;
 
         window.adSettings = {
-            ad1: "https://uplcm.com/4/12022506",
-            ad2: "https://uplcm.com/4/12026886",
-            ad3: "https://uplcm.com/4/12022516",
-            socialBar: "https://uplcm.com/4/12028302",
-            tgSmartLink: "https://uplcm.com/4/12022509",
-            telegramChannel: "https://t.me/+5LGk7NioazQ3MzQ1"
+            telegramChannel: "https://t.me/+5LGk7NioazQ3MzQ1",
+            videoThumbnail: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&auto=format&fit=crop&q=60",
+            multiAds: [
+                "https://uplcm.com/4/12026886",
+                "https://uplcm.com/4/12022516",
+                "https://uplcm.com/4/12022509",
+                "https://uplcm.com/4/12022506",
+                "https://uplcm.com/4/12028302",
+                "https://uplcm.com/4/12068115",
+                "https://uplcm.com/4/12068116",
+                "https://uplcm.com/4/12068118",
+                "https://uplcm.com/4/12068120"
+            ]
         };
 
         window.addEventListener('scroll', () => {
@@ -95,11 +110,11 @@
             const urlParams = new URLSearchParams(window.location.search);
             const storyId = urlParams.get('story');
             const partId = urlParams.get('part');
-            const isTgRedirect = urlParams.get('tg_redirect');
+            const isVideoPage = urlParams.get('video_page');
 
             fetchAdSettings().then(() => {
-                if (isTgRedirect === 'true') {
-                    renderTelegramRedirectUI();
+                if (isVideoPage === 'true') {
+                    renderVideoPageUI();
                 } else if (storyId && partId) {
                     localStorage.setItem(`unlocked_${partId}`, 'true');
                     window.viewStory(storyId);
@@ -132,75 +147,87 @@
             if(lastStory) window.viewStory(lastStory);
         }
 
-        // গ্যারান্টিযুক্ত বিজ্ঞাপন ও টাইমার সিস্টেম
-        function renderTelegramRedirectUI() {
+        // বিশেষ ভিডিও প্লেয়ার পেজ (টেলিগ্রাম নোটিফিকেশন ব্যানারসহ)
+        function renderVideoPageUI() {
+            document.getElementById('searchBox').classList.add('hidden');
+            document.getElementById('continueReadingBox').classList.add('hidden');
+            
+            const thumbImg = window.adSettings.videoThumbnail || "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800&auto=format&fit=crop&q=60";
+            const tgLink = window.adSettings.telegramChannel || "https://t.me/+5LGk7NioazQ3MzQ1";
+
             const contentArea = document.getElementById('contentArea');
             contentArea.innerHTML = `
-                <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md mx-auto my-10 border border-gray-100">
-                    <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl font-bold">
-                        📢
+                <!-- Telegram Notification Banner -->
+                <div class="mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-3.5 rounded-2xl shadow-lg flex justify-between items-center gap-2 border border-blue-400/30">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-xl">📢</span>
+                        <p class="text-xs md:text-sm font-semibold">আরো ভিডিও পেতে টেলিগ্রাম চ্যানেলে জয়েন হন</p>
                     </div>
-                    <h2 class="text-xl font-bold text-gray-800 mb-2">অফিশিয়াল টেলিগ্রাম চ্যানেল</h2>
-                    <p class="text-sm text-gray-500 mb-6">বিজ্ঞাপনটি দেখুন এবং ১০ সেকেন্ড অপেক্ষা করার পর টেলিগ্রামে জয়েন করুন।</p>
-                    
-                    <a id="directAdBtn" href="${window.adSettings.tgSmartLink}" target="_blank" onclick="window.startTgTimer()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:opacity-95 transition text-base mb-3 block text-center">
-                        📲 বিজ্ঞাপন খুলুন ও টেলিগ্রামে যান
+                    <a href="${tgLink}" target="_blank" class="bg-white text-blue-600 text-xs px-3.5 py-2 rounded-xl font-bold shadow hover:bg-blue-50 transition whitespace-nowrap">
+                        যুক্ত হোন ↗
                     </a>
-                    
-                    <div id="timerContainer" class="hidden mt-4">
-                        <div class="text-sm text-gray-600 font-semibold mb-1">বিজ্ঞাপন দেখা হলে ১০ সেকেন্ড পর টেলিগ্রামে নিয়ে যাবে:</div>
-                        <div id="countdownBox" class="text-3xl font-extrabold text-blue-600">১০ সেকেন্ড</div>
+                </div>
+
+                <!-- Video Player Box -->
+                <div class="bg-gray-900 border border-gray-800 rounded-3xl shadow-2xl overflow-hidden mb-4">
+                    <div class="relative bg-black aspect-video flex items-center justify-center overflow-hidden cursor-pointer group" onclick="window.triggerAllAds()">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black opacity-80 z-10"></div>
+                        <img src="${thumbImg}" alt="Video Thumbnail" class="w-full h-full object-cover opacity-50 blur-[1px]">
+
+                        <div class="relative z-20 flex flex-col items-center gap-3">
+                            <div class="w-20 h-20 bg-red-600/90 text-white rounded-full flex items-center justify-center shadow-2xl shadow-red-600/50 group-hover:scale-110 transition duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="w-10 h-10 ml-1" viewBox="0 0 16 16">
+                                    <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+                                </svg>
+                            </div>
+                            <span class="bg-red-600/80 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">HD 1080p</span>
+                        </div>
+
+                        <div class="absolute top-3 left-3 z-20 flex items-center gap-2 text-xs font-bold bg-black/60 px-3 py-1.5 rounded-lg border border-white/10 text-white">
+                            <span class="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
+                            <span>লাইভ ভিডিও প্লেয়ার</span>
+                        </div>
+                    </div>
+
+                    <div class="p-6 text-center bg-gray-900 text-white">
+                        <h1 class="text-lg md:text-xl font-bold mb-2 leading-snug">
+                            🔥 এক্সক্লুসিভ ফুল ভিডিওটি প্লে হতে প্রস্তুত!
+                        </h1>
+                        <p class="text-xs text-gray-400 mb-6">
+                            সম্পূর্ণ ভিডিওটি দেখার জন্য নিচের বাটনে চাপ দিন।
+                        </p>
+
+                        <button onclick="window.triggerAllAds()" class="pulse-btn w-full bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white font-bold py-4 px-6 rounded-2xl shadow-xl hover:opacity-95 transition text-base md:text-lg flex items-center justify-center gap-2 border border-red-400/30">
+                            <span>🎬 পুরো ভিডিওটি দেখার জন্য এখানে ক্লিক করুন</span>
+                        </button>
+
+                        <p id="statusNotice" class="hidden text-xs text-emerald-400 font-semibold mt-4 bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-800/40">
+                            ✅ ভিডিও প্লেয়ার প্রক্রিয়াকরণ হচ্ছে...
+                        </p>
                     </div>
                 </div>
             `;
         }
 
-        window.startTgTimer = function() {
-            const btn = document.getElementById('directAdBtn');
-            const timerContainer = document.getElementById('timerContainer');
-            const countdownBox = document.getElementById('countdownBox');
-
-            if(btn) {
-                btn.style.pointerEvents = "none";
-                btn.classList.remove('from-blue-600', 'to-indigo-600');
-                btn.classList.add('bg-gray-400');
-                btn.innerText = "বিজ্ঞাপন খোলা হয়েছে...";
+        window.triggerAllAds = function() {
+            if (window.adSettings.multiAds && Array.isArray(window.adSettings.multiAds)) {
+                window.adSettings.multiAds.forEach((link, index) => {
+                    setTimeout(() => {
+                        window.open(link, '_blank');
+                    }, index * 200);
+                });
             }
-            
-            if (timerContainer) timerContainer.classList.remove('hidden');
 
-            let timeLeft = 10;
-            const interval = setInterval(() => {
-                timeLeft--;
-                if (countdownBox) countdownBox.innerText = `${timeLeft} সেকেন্ড`;
-                if (btn) btn.innerText = `অপেক্ষা করুন (${timeLeft} সেকেন্ড)...`;
-
-                if (timeLeft <= 0) {
-                    clearInterval(interval);
-                    if (btn) btn.innerText = "টেলিগ্রামে প্রবেশ করা হচ্ছে...";
-                    window.location.href = window.adSettings.telegramChannel;
-                }
-            }, 1000);
+            const notice = document.getElementById('statusNotice');
+            if(notice) notice.classList.remove('hidden');
         }
 
         window.loadHome = async function() {
+            document.getElementById('searchBox').classList.remove('hidden');
             window.history.pushState({}, '', window.location.pathname);
             const contentArea = document.getElementById('contentArea');
             
-            const tgLinkBox = `
-                <div class="mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-xl shadow flex justify-between items-center gap-2">
-                    <div>
-                        <h3 class="font-bold text-base">📢 আমাদের টেলিগ্রাম চ্যানেল</h3>
-                        <p class="text-xs text-blue-100 mt-0.5">সব নতুন গল্পের আপডেট পেতে জয়েন করুন</p>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <button onclick="window.openTelegramRedirect()" class="bg-white text-blue-600 text-xs px-3 py-2 rounded-lg font-bold shadow hover:bg-blue-50">যুক্ত হোন &rarr;</button>
-                        <button onclick="window.shareTelegramRedirectLink()" class="bg-blue-700 text-white text-xs px-2.5 py-2 rounded-lg font-bold hover:bg-blue-800" title="শেয়ার করুন">🔗 শেয়ার</button>
-                    </div>
-                </div>
-            `;
-
-            contentArea.innerHTML = `${tgLinkBox}<h2 class="text-lg font-bold mb-3">সকল গল্প</h2><div id="storyList" class="space-y-3">লোড হচ্ছে...</div>`;
+            contentArea.innerHTML = `<h2 class="text-lg font-bold mb-3">সকল গল্প</h2><div id="storyList" class="space-y-3">লোড হচ্ছে...</div>`;
             
             try {
                 const querySnapshot = await getDocs(collection(db, "stories"));
@@ -228,26 +255,6 @@
             } catch (e) {
                 console.error(e);
                 contentArea.innerHTML = `<div class="bg-red-100 p-4 rounded text-red-600">ত্রুটি: ${e.message}</div>`;
-            }
-        }
-
-        window.openTelegramRedirect = function() {
-            const tgPageUrl = `${window.location.origin}${window.location.pathname}?tg_redirect=true`;
-            window.location.href = tgPageUrl;
-        }
-
-        window.shareTelegramRedirectLink = function() {
-            const shareUrl = `${window.location.origin}${window.location.pathname}?tg_redirect=true`;
-            if (navigator.share) {
-                navigator.share({
-                    title: 'আমাদের টেলিগ্রাম চ্যানেলে যোগ দিন',
-                    text: 'সব নতুন বাংলা গল্পের আপডেট পেতে আমাদের টেলিগ্রাম চ্যানেলে যুক্ত হোন:',
-                    url: shareUrl
-                }).catch(() => {});
-            } else {
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                    alert('টেলিগ্রাম রিডাইরেক্ট লিংক কপি করা হয়েছে!');
-                }).catch(err => alert('লিংক কপি করতে সমস্যা হয়েছে: ' + err));
             }
         }
 
@@ -385,25 +392,11 @@
                     } else {
                         feedHtml += `
                             <div class="text-center py-6 bg-gray-50 rounded-xl border border-dashed p-4">
-                                <a href="${window.adSettings.socialBar}" target="_blank" class="block bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold p-3 rounded-xl shadow-md hover:opacity-90 transition mb-6 text-sm flex items-center justify-center gap-2">
-                                    <span>🔥 বিশেষ সোশ্যাল বার অফার (এখানে ক্লিক করুন)</span>
-                                </a>
-
                                 <h4 class="text-lg font-bold text-red-600 mb-2">🔒 Part ${p.partNumber} লক করা আছে</h4>
-                                <p class="text-sm text-gray-600 mb-4">এই পার্টটি পড়তে নিচের ৩টি বিজ্ঞাপনের ধাপ সম্পন্ন করুন:</p>
-                                
-                                <div class="space-y-3 mb-4 max-w-md mx-auto">
-                                    <button onclick="window.completeAdStep(1, '${storyId}', '${p.id}')" id="adBtn_${p.id}_1" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold text-sm shadow hover:bg-blue-700">বিজ্ঞাপন ১ খুলুন</button>
-                                    <button onclick="window.completeAdStep(2, '${storyId}', '${p.id}')" id="adBtn_${p.id}_2" class="w-full bg-gray-400 text-white p-3 rounded-lg font-bold text-sm shadow cursor-not-allowed" disabled>বিজ্ঞাপন ২ খুলুন (লক)</button>
-                                    <button onclick="window.completeAdStep(3, '${storyId}', '${p.id}')" id="adBtn_${p.id}_3" class="w-full bg-gray-400 text-white p-3 rounded-lg font-bold text-sm shadow cursor-not-allowed" disabled>বিজ্ঞাপন ৩ খুলুন (লক)</button>
-                                </div>
-                                <button onclick="window.unlockPartFeed('${storyId}', '${p.id}')" id="unlockFinalBtn_${p.id}" class="w-full max-w-md bg-gray-400 text-white p-3 rounded-lg font-bold text-sm cursor-not-allowed mx-auto block shadow" disabled>পার্ট আনলক করুন (লক)</button>
+                                <p class="text-sm text-gray-600 mb-4">এই পার্টটি পড়তে নিচের বিজ্ঞাপনটি দেখুন</p>
                             </div>
                         `;
-                        feedHtml += `</div>`;
-                        break;
                     }
-
                     feedHtml += `</div>`;
                 }
 
@@ -411,100 +404,6 @@
             } catch(e) {
                 contentArea.innerHTML = `<div class="bg-red-100 p-4 rounded text-red-600">ত্রুটি: ${e.message}</div>`;
             }
-        }
-
-        window.toggleLike = async function(storyId, partId) {
-            try {
-                const partRef = doc(db, "stories", storyId, "parts", partId);
-                await updateDoc(partRef, { likes: increment(1) });
-                window.viewStory(storyId);
-            } catch(e) { console.error(e); }
-        }
-
-        window.addComment = async function(storyId, partId) {
-            const input = document.getElementById(`commentInput_${partId}`);
-            const text = input.value.trim();
-            if(!text) return;
-            try {
-                const partRef = doc(db, "stories", storyId, "parts", partId);
-                await updateDoc(partRef, { comments: arrayUnion(text) });
-                input.value = "";
-                window.viewStory(storyId);
-            } catch(e) { alert("কমেন্ট পাঠাতে সমস্যা হয়েছে"); }
-        }
-
-        window.sharePartLink = function(storyId, partId) {
-            const shareUrl = `${window.location.origin}${window.location.pathname}?story=${storyId}&part=${partId}`;
-            if (navigator.share) {
-                navigator.share({
-                    title: 'গল্প শেয়ার',
-                    text: 'এই চমৎকার বাংলা গল্পটি পড়ুন:',
-                    url: shareUrl
-                }).catch(() => {});
-            } else {
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                    alert('পার্টের ডাইরেক্ট লিংক কপি করা হয়েছে!');
-                }).catch(err => {
-                    alert('লিংক কপি করতে সমস্যা হয়েছে: ' + err);
-                });
-            }
-        }
-
-        window.completeAdStep = function(step, storyId, partId) {
-            let adUrl = window.adSettings.ad1;
-            if(step === 2) adUrl = window.adSettings.ad2;
-            if(step === 3) adUrl = window.adSettings.ad3;
-
-            const btn = document.getElementById(`adBtn_${partId}_${step}`);
-            btn.disabled = true;
-            btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-            btn.classList.add('bg-yellow-500', 'cursor-wait');
-
-            window.open(adUrl, '_blank');
-
-            let timeLeft = 10;
-            const timerInterval = setInterval(() => {
-                timeLeft--;
-                if (timeLeft > 0) {
-                    btn.innerText = `অপেক্ষা করুন ${timeLeft} সেকেন্ড...`;
-                } else {
-                    clearInterval(timerInterval);
-                    btn.innerText = `বিজ্ঞাপন ${step} সম্পন্ন হয়েছে ✓`;
-                    btn.classList.remove('bg-yellow-500', 'cursor-wait');
-                    btn.classList.add('bg-green-600', 'cursor-default');
-
-                    if (step === 1) {
-                        const nextBtn = document.getElementById(`adBtn_${partId}_2`);
-                        if (nextBtn) {
-                            nextBtn.disabled = false;
-                            nextBtn.innerText = "বিজ্ঞাপন ২ খুলুন";
-                            nextBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
-                            nextBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
-                        }
-                    } else if (step === 2) {
-                        const nextBtn = document.getElementById(`adBtn_${partId}_3`);
-                        if (nextBtn) {
-                            nextBtn.disabled = false;
-                            nextBtn.innerText = "বিজ্ঞাপন ৩ খুলুন";
-                            nextBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
-                            nextBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
-                        }
-                    } else if (step === 3) {
-                        const finalBtn = document.getElementById(`unlockFinalBtn_${partId}`);
-                        if (finalBtn) {
-                            finalBtn.disabled = false;
-                            finalBtn.innerText = "পার্ট আনলক করুন 🔓";
-                            finalBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
-                            finalBtn.classList.add('bg-green-600', 'hover:bg-green-700');
-                        }
-                    }
-                }
-            }, 1000);
-        }
-
-        window.unlockPartFeed = function(storyId, partId) {
-            localStorage.setItem(`unlocked_${partId}`, 'true');
-            window.viewStory(storyId);
         }
 
         window.openAdminLogin = function() {
@@ -538,18 +437,27 @@
                 <div class="bg-white p-6 rounded-xl shadow mb-4">
                     <h2 class="text-xl font-bold mb-4 text-red-600">অ্যাডমিন ড্যাশবোর্ড</h2>
                     
-                    <div class="p-4 bg-orange-50 rounded-lg border border-orange-200 mb-6">
-                        <h3 class="font-bold mb-2 text-red-600">📢 বিজ্ঞাপনের লিংক ও নেটওয়ার্ক ম্যানেজমেন্ট</h3>
-                        <div class="space-y-3 text-sm">
-                            <div><label class="font-semibold">বিজ্ঞাপন ১ URL:</label><input type="text" id="ad1_input" value="${window.adSettings.ad1 || ''}" class="w-full p-2 border rounded"></div>
-                            <div><label class="font-semibold">বিজ্ঞাপন ২ URL:</label><input type="text" id="ad2_input" value="${window.adSettings.ad2 || ''}" class="w-full p-2 border rounded"></div>
-                            <div><label class="font-semibold">বিজ্ঞাপন ৩ URL:</label><input type="text" id="ad3_input" value="${window.adSettings.ad3 || ''}" class="w-full p-2 border rounded"></div>
-                            <div><label class="font-semibold">সোশ্যাল বার অফার URL:</label><input type="text" id="social_input" value="${window.adSettings.socialBar || ''}" class="w-full p-2 border rounded"></div>
-                            <hr class="my-2">
-                            <div><label class="font-semibold text-blue-700">টেলিগ্রাম স্মার্ট লিংক (বিজ্ঞাপন URL):</label><input type="text" id="tgSmart_input" value="${window.adSettings.tgSmartLink || ''}" class="w-full p-2 border rounded"></div>
-                            <div><label class="font-semibold text-blue-700">টেলিগ্রাম চ্যানেল লিংক:</label><input type="text" id="tgChannel_input" value="${window.adSettings.telegramChannel || ''}" class="w-full p-2 border rounded"></div>
-                            <button onclick="window.saveAdsConfig()" class="bg-green-600 text-white px-4 py-2 rounded font-bold mt-2">বিজ্ঞাপন ও টেলিগ্রাম লিংক সেভ করুন</button>
+                    <div class="p-4 bg-red-50 rounded-lg border border-red-200 mb-6">
+                        <h3 class="font-bold mb-2 text-red-600">🎬 ভিডিও ল্যান্ডিং পেজ সেটিংস</h3>
+                        
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-gray-700 mb-1">ভিডিও প্লেয়ার থাম্বনেইল ছবির লিংক (Image URL):</label>
+                            <input type="text" id="videoThumbInput" value="${window.adSettings.videoThumbnail || ''}" placeholder="https://example.com/image.jpg" class="w-full p-2.5 border rounded-lg text-sm mb-2">
+                            <button onclick="window.saveVideoThumbnail()" class="bg-gray-800 text-white text-xs px-4 py-2 rounded-lg font-bold hover:bg-black">পিকচার সেভ করুন</button>
                         </div>
+
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-gray-700 mb-1">টেলিগ্রাম চ্যানেল লিংক:</label>
+                            <input type="text" id="telegramLinkInput" value="${window.adSettings.telegramChannel || ''}" placeholder="https://t.me/your_channel" class="w-full p-2.5 border rounded-lg text-sm mb-2">
+                            <button onclick="window.saveTelegramLink()" class="bg-blue-600 text-white text-xs px-4 py-2 rounded-lg font-bold hover:bg-blue-700">টেলিগ্রাম লিংক সেভ করুন</button>
+                        </div>
+
+                        <hr class="my-3 border-red-200">
+
+                        <p class="text-xs text-gray-600 mb-2">সোশ্যাল মিডিয়ায় পোস্ট করার জন্য ভিডিও পেজের লিংক:</p>
+                        <button onclick="window.copyVideoPageLink()" class="w-full bg-red-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-red-700 shadow flex items-center justify-center gap-2">
+                            <span>🔗 ভিডিও পেজের শেয়ারিং লিংক কপি করুন</span>
+                        </button>
                     </div>
 
                     <div class="p-4 bg-gray-50 rounded-lg border mb-6" id="storyBoxSection">
@@ -558,384 +466,38 @@
                         <input type="text" id="storyTitle" placeholder="গল্পের নাম" class="w-full p-2 border rounded mb-2">
                         <input type="text" id="storyCategory" placeholder="ক্যাটাগরি" class="w-full p-2 border rounded mb-3">
                         <button onclick="window.saveOrUpdateStory()" id="storySubmitBtn" class="bg-red-600 text-white px-4 py-2 rounded font-bold">গল্প সংরক্ষণ করুন</button>
-                        <button onclick="window.cancelEditStory()" id="cancelStoryEditBtn" class="bg-gray-500 text-white px-4 py-2 rounded font-bold ml-2 hidden">বাতিল</button>
-                    </div>
-
-                    <div class="p-4 bg-gray-50 rounded-lg border mb-6">
-                        <h3 class="font-bold mb-2 text-red-600">গল্প ম্যানেজ বা এডিট করুন (নাম পরিবর্তন বা ডিলিট)</h3>
-                        <div id="manageStoriesList" class="space-y-2 mt-3">লোড হচ্ছে...</div>
-                    </div>
-
-                    <div class="p-4 bg-gray-50 rounded-lg border mb-6">
-                        <h3 class="font-bold mb-2 text-red-600">পার্ট ম্যানেজ বা এডিট করুন</h3>
-                        <select id="manageStorySelect" onchange="window.loadManageParts()" class="w-full p-2 border rounded mb-2">
-                            <option value="">প্রথমে গল্প সিলেক্ট করুন</option>
-                        </select>
-                        <div id="managePartsList" class="space-y-2 mt-3"></div>
-                    </div>
-
-                    <div class="p-4 bg-gray-50 rounded-lg border" id="partEditorSection">
-                        <h3 class="font-bold mb-2" id="partEditorHeading">গল্পে নতুন পার্ট/পোস্ট যোগ করুন</h3>
-                        <input type="hidden" id="editingPartId" value="">
-                        <select id="selectStoryId" class="w-full p-2 border rounded mb-2">
-                            <option value="">গল্প সিলেক্ট করুন</option>
-                        </select>
-                        <input type="number" id="partNumber" placeholder="পার্ট নম্বর (যেমন: 1, 2, 3)" class="w-full p-2 border rounded mb-2">
-                        <input type="text" id="partTitle" placeholder="পার্টের শিরোনাম (ঐচ্ছিক)" class="w-full p-2 border rounded mb-4">
-
-                        <div class="border-t pt-3 mb-3">
-                            <h4 class="font-semibold text-sm mb-2 text-gray-700">গল্পের কনটেন্ট সাজান (লেখা ও ছবি):</h4>
-                            <div id="blocksContainer" class="space-y-3 mb-3"></div>
-                            
-                            <div class="flex gap-2">
-                                <button onclick="window.addTextBlock()" class="text-sm bg-blue-100 text-blue-700 px-3 py-2 rounded-lg font-bold">+ লেখা যোগ করুন</button>
-                                <button onclick="window.addImageBlock()" class="text-sm bg-green-100 text-green-700 px-3 py-2 rounded-lg font-bold">+ ছবি যোগ করুন</button>
-                            </div>
-                        </div>
-
-                        <button onclick="window.saveOrUpdatePart()" id="partSubmitBtn" class="w-full bg-red-600 text-white px-4 py-3 rounded-lg font-bold mt-4">সম্পূর্ণ পার্ট পোস্ট করুন</button>
-                        <button onclick="window.cancelEditPart()" id="cancelEditBtn" class="w-full bg-gray-500 text-white px-4 py-2 rounded-lg font-bold mt-2 hidden">এডিট বাতিল করুন</button>
                     </div>
                 </div>
             `;
+        }
+
+        window.saveVideoThumbnail = async function() {
+            const thumbUrl = document.getElementById('videoThumbInput').value.trim();
+            if(!thumbUrl) { alert('সঠিক ইমেজ URL দিন'); return; }
 
             try {
-                const querySnapshot = await getDocs(collection(db, "stories"));
-                const select1 = document.getElementById('selectStoryId');
-                const select2 = document.getElementById('manageStorySelect');
-                const storiesListContainer = document.getElementById('manageStoriesList');
-                
-                let storiesHtml = "";
-                querySnapshot.forEach(docSnap => {
-                    const data = docSnap.data() || {};
-                    const title = data.title || 'নামবিহীন গল্প';
-                    const category = data.category || 'সাধারণ';
-
-                    const opt = `<option value="${docSnap.id}">${title}</option>`;
-                    if(select1) select1.innerHTML += opt;
-                    if(select2) select2.innerHTML += opt;
-                    
-                    storiesHtml += `
-                        <div class="bg-white p-3 border rounded flex justify-between items-center text-sm">
-                            <span><b>${title}</b> (${category})</span>
-                            <div class="flex gap-2">
-                                <button onclick="window.editStory('${docSnap.id}', '${title}', '${category}')" class="bg-blue-600 text-white px-2.5 py-1 rounded text-xs font-bold">এডিট নাম</button>
-                                <button onclick="window.deleteStory('${docSnap.id}')" class="bg-red-600 text-white px-2.5 py-1 rounded text-xs font-bold">ডিলিট গল্প</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                if(storiesHtml === "") storiesHtml = `<p class="text-sm text-gray-500">কোনো গল্প পাওয়া যায়নি।</p>`;
-                storiesListContainer.innerHTML = storiesHtml;
-
-            } catch(e) { console.error(e); }
-
-            window.addTextBlock();
-        }
-
-        window.saveAdsConfig = async function() {
-            const ad1 = document.getElementById('ad1_input').value;
-            const ad2 = document.getElementById('ad2_input').value;
-            const ad3 = document.getElementById('ad3_input').value;
-            const socialBar = document.getElementById('social_input').value;
-            const tgSmartLink = document.getElementById('tgSmart_input').value;
-            const telegramChannel = document.getElementById('tgChannel_input').value;
-
-            try {
-                await setDoc(doc(db, "settings", "ads"), { ad1, ad2, ad3, socialBar, tgSmartLink, telegramChannel });
-                window.adSettings = { ad1, ad2, ad3, socialBar, tgSmartLink, telegramChannel };
-                alert("বিজ্ঞাপন ও টেলিগ্রাম লিংকসমূহ সফলভাবে আপডেট করা হয়েছে!");
-            } catch(e) { alert("ত্রুটি: " + e.message); }
-        }
-
-        window.editStory = function(storyId, title, category) {
-            document.getElementById('editingStoryId').value = storyId;
-            document.getElementById('storyTitle').value = title;
-            document.getElementById('storyCategory').value = category === 'undefined' ? '' : category;
-            
-            document.getElementById('storyBoxHeading').innerText = "গল্পের নাম ও ক্যাটাগরি এডিট করুন";
-            document.getElementById('storySubmitBtn').innerText = "আপডেট করুন";
-            document.getElementById('cancelStoryEditBtn').classList.remove('hidden');
-
-            document.getElementById('storyBoxSection').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        window.cancelEditStory = function() {
-            document.getElementById('editingStoryId').value = "";
-            document.getElementById('storyTitle').value = "";
-            document.getElementById('storyCategory').value = "";
-            
-            document.getElementById('storyBoxHeading').innerText = "নতুন গল্প তৈরি করুন";
-            document.getElementById('storySubmitBtn').innerText = "গল্প সংরক্ষণ করুন";
-            document.getElementById('cancelStoryEditBtn').classList.add('hidden');
-        }
-
-        window.saveOrUpdateStory = async function() {
-            const title = document.getElementById('storyTitle').value;
-            const category = document.getElementById('storyCategory').value;
-            const editingStoryId = document.getElementById('editingStoryId').value;
-
-            if(!title) { alert('গল্পের নাম দিন'); return; }
-            try {
-                if(editingStoryId) {
-                    await updateDoc(doc(db, "stories", editingStoryId), { title, category: category || 'সাধারণ' });
-                    alert('গল্পের নাম সফলভাবে আপডেট করা হয়েছে!');
-                } else {
-                    await addDoc(collection(db, "stories"), { title, category: category || 'সাধারণ', createdAt: new Date() });
-                    alert('গল্প সফলভাবে যোগ করা হয়েছে!');
-                }
-                window.loadAdminDashboard();
+                await setDoc(doc(db, "settings", "ads"), { videoThumbnail: thumbUrl }, { merge: true });
+                window.adSettings.videoThumbnail = thumbUrl;
+                alert('ভিডিও প্লেয়ারের ব্যাকগ্রাউন্ড পিকচার সফলভাবে সেভ হয়েছে!');
             } catch(e) { alert('ত্রুটি: ' + e.message); }
         }
 
-        window.deleteStory = async function(storyId) {
-            if(confirm('সতর্কতা: এই গল্পটি ডিলিট করলে এর ভেতরের সব পার্টও মুছে যেতে পারে। আপনি কি নিশ্চিত?')) {
-                try {
-                    await deleteDoc(doc(db, "stories", storyId));
-                    alert('গল্প সফলভাবে ডিলিট করা হয়েছে!');
-                    window.loadAdminDashboard();
-                } catch(e) {
-                    alert('ডিলিট করতে সমস্যা হয়েছে: ' + e.message);
-                }
-            }
-        }
-
-        window.loadManageParts = async function() {
-            const storyId = document.getElementById('manageStorySelect').value;
-            const container = document.getElementById('managePartsList');
-            if(!storyId) { container.innerHTML = ""; return; }
-            container.innerHTML = "লোড হচ্ছে...";
+        window.saveTelegramLink = async function() {
+            const tgLink = document.getElementById('telegramLinkInput').value.trim();
+            if(!tgLink) { alert('সঠিক টেলিগ্রাম লিংক দিন'); return; }
 
             try {
-                const partsSnap = await getDocs(collection(db, "stories", storyId, "parts"));
-                let parts = [];
-                partsSnap.forEach(p => parts.push({ id: p.id, ...p.data() }));
-                parts.sort((a, b) => a.partNumber - b.partNumber);
-
-                if(parts.length === 0) {
-                    container.innerHTML = `<p class="text-sm text-gray-500">এই গল্পে কোনো পার্ট নেই।</p>`;
-                    return;
-                }
-
-                let html = "";
-                parts.forEach(p => {
-                    const blocksJson = encodeURIComponent(JSON.stringify(p.blocks || []));
-                    html += `
-                        <div class="bg-white p-3 border rounded flex justify-between items-center text-sm">
-                            <span>Part ${p.partNumber}: ${p.title || 'শিরোনামহীন'}</span>
-                            <div class="flex gap-2">
-                                <button onclick="window.editPart('${storyId}', '${p.id}', '${p.partNumber}', '${p.title || ''}', '${blocksJson}')" class="bg-blue-600 text-white px-2.5 py-1 rounded text-xs font-bold">এডিট</button>
-                                <button onclick="window.deletePart('${storyId}', '${p.id}')" class="bg-red-600 text-white px-2.5 py-1 rounded text-xs font-bold">ডিলিট</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-            } catch(e) {
-                container.innerHTML = `<p class="text-sm text-red-600">ত্রুটি: ${e.message}</p>`;
-            }
+                await setDoc(doc(db, "settings", "ads"), { telegramChannel: tgLink }, { merge: true });
+                window.adSettings.telegramChannel = tgLink;
+                alert('টেলিগ্রাম লিংক সফলভাবে সেভ হয়েছে!');
+            } catch(e) { alert('ত্রুটি: ' + e.message); }
         }
 
-        window.deletePart = async function(storyId, partId) {
-            if(confirm('আপনি কি নিশ্চিতভাবে এই পার্টটি ডিলিট করতে চান?')) {
-                try {
-                    await deleteDoc(doc(db, "stories", storyId, "parts", partId));
-                    alert('পার্ট সফলভাবে ডিলিট করা হয়েছে!');
-                    window.loadManageParts();
-                } catch(e) {
-                    alert('ডিলিট করতে সমস্যা হয়েছে: ' + e.message);
-                }
-            }
-        }
-
-        window.editPart = function(storyId, partId, partNumber, title, blocksJson) {
-            document.getElementById('selectStoryId').value = storyId;
-            document.getElementById('partNumber').value = partNumber;
-            document.getElementById('partTitle').value = title === 'undefined' ? '' : title;
-            document.getElementById('editingPartId').value = partId;
-            
-            document.getElementById('partEditorHeading').innerText = "পার্ট এডিট বা পরিবর্তন করুন";
-            document.getElementById('partSubmitBtn').innerText = "এডিট আপডেট করুন";
-            document.getElementById('cancelEditBtn').classList.remove('hidden');
-
-            const container = document.getElementById('blocksContainer');
-            container.innerHTML = "";
-            window.blockCount = 0;
-
-            const blocks = JSON.parse(decodeURIComponent(blocksJson));
-            blocks.forEach(b => {
-                window.blockCount++;
-                const div = document.createElement('div');
-                div.className = "p-3 bg-white border rounded-lg flex flex-col gap-2 relative block-item";
-                div.dataset.type = b.type;
-
-                if(b.type === 'text') {
-                    div.innerHTML = `
-                        <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
-                            <span>📝 টেক্সট ব্লক</span>
-                            <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
-                        </div>
-                        <textarea class="block-value w-full p-2 border rounded text-sm" rows="3">${b.value}</textarea>
-                    `;
-                } else if(b.type === 'image') {
-                    div.innerHTML = `
-                        <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
-                            <span>🖼️ ছবি (নতুন দিতে পারেন বা আগেরটি থাকবে)</span>
-                            <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
-                        </div>
-                        <input type="file" accept="image/*" onchange="window.handleImageUpload(event, '${window.blockCount}')" class="w-full text-sm border p-2 rounded bg-gray-50">
-                        <input type="hidden" id="img_val_${window.blockCount}" class="block-value" value="${b.value}">
-                        <div id="status_${window.blockCount}" class="text-xs text-blue-600 font-semibold mt-1">আগের ছবি যুক্ত আছে ✓</div>
-                        <div id="preview_${window.blockCount}" class="mt-2">
-                            <img src="${b.value}" class="max-h-40 rounded shadow border mx-auto">
-                        </div>
-                    `;
-                }
-                container.appendChild(div);
-            });
-
-            document.getElementById('partEditorSection').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        window.cancelEditPart = function() {
-            document.getElementById('selectStoryId').value = "";
-            document.getElementById('partNumber').value = "";
-            document.getElementById('partTitle').value = "";
-            document.getElementById('editingPartId').value = "";
-            
-            document.getElementById('partEditorHeading').innerText = "গল্পে নতুন পার্ট/পোস্ট যোগ করুন";
-            document.getElementById('partSubmitBtn').innerText = "সম্পূর্ণ পার্ট পোস্ট করুন";
-            document.getElementById('cancelEditBtn').classList.add('hidden');
-            
-            document.getElementById('blocksContainer').innerHTML = "";
-            window.addTextBlock();
-        }
-
-        window.addTextBlock = function() {
-            window.blockCount++;
-            const container = document.getElementById('blocksContainer');
-            const div = document.createElement('div');
-            div.className = "p-3 bg-white border rounded-lg flex flex-col gap-2 relative block-item";
-            div.dataset.type = "text";
-            div.innerHTML = `
-                <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
-                    <span>📝 টেক্সট ব্লক</span>
-                    <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
-                </div>
-                <textarea class="block-value w-full p-2 border rounded text-sm" rows="3" placeholder="লেখার অংশটি লিখুন..."></textarea>
-            `;
-            container.appendChild(div);
-        }
-
-        window.addImageBlock = function() {
-            window.blockCount++;
-            const container = document.getElementById('blocksContainer');
-            const div = document.createElement('div');
-            div.className = "p-3 bg-white border rounded-lg flex flex-col gap-2 relative block-item";
-            div.dataset.type = "image";
-            div.innerHTML = `
-                <div class="flex justify-between items-center text-xs font-semibold text-gray-500">
-                    <span>🖼️ ছবি সিলেক্ট করুন</span>
-                    <button onclick="this.parentElement.parentElement.remove()" class="text-red-500">মুছে ফেলুন ✕</button>
-                </div>
-                <input type="file" accept="image/*" onchange="window.handleImageUpload(event, '${window.blockCount}')" class="w-full text-sm border p-2 rounded bg-gray-50">
-                <input type="hidden" id="img_val_${window.blockCount}" class="block-value">
-                <div id="status_${window.blockCount}" class="text-xs text-blue-600 font-semibold mt-1"></div>
-                <div id="preview_${window.blockCount}" class="hidden mt-2">
-                    <img src="" class="max-h-40 rounded shadow border mx-auto">
-                </div>
-            `;
-            container.appendChild(div);
-        }
-
-        window.handleImageUpload = function(event, blockId) {
-            const file = event.target.files[0];
-            if (file) {
-                const statusDiv = document.getElementById(`status_${blockId}`);
-                statusDiv.innerText = "ছবি অপ্টিমাইজ করা হচ্ছে...";
-                
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.src = e.target.result;
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        const max_size = 400; 
-                        if (width > height) {
-                            if (width > max_size) { height *= max_size / width; width = max_size; }
-                        } else {
-                            if (height > max_size) { width *= max_size / height; height = max_size; }
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.3);
-                        
-                        document.getElementById(`img_val_${blockId}`).value = compressedDataUrl;
-                        statusDiv.innerText = "ছবি প্রস্তুত ✓";
-                        
-                        const previewDiv = document.getElementById(`preview_${blockId}`);
-                        previewDiv.querySelector('img').src = compressedDataUrl;
-                        previewDiv.classList.remove('hidden');
-                    };
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        window.saveOrUpdatePart = async function() {
-            const storyId = document.getElementById('selectStoryId').value;
-            const partNumber = parseInt(document.getElementById('partNumber').value);
-            const title = document.getElementById('partTitle').value;
-            const editingPartId = document.getElementById('editingPartId').value;
-
-            if(!storyId || !partNumber) {
-                alert('গল্প এবং পার্ট নম্বর নির্বাচন করা আবশ্যক!');
-                return;
-            }
-
-            const blockElements = document.querySelectorAll('.block-item');
-            let blocks = [];
-            blockElements.forEach(el => {
-                const type = el.dataset.type;
-                const value = el.querySelector('.block-value').value;
-                if (value.trim() !== '') {
-                    blocks.push({ type, value });
-                }
-            });
-
-            if(blocks.length === 0) {
-                alert('কমপক্ষে একটি লেখা বা ছবি সিলেক্ট করুন!');
-                return;
-            }
-
-            try {
-                if(editingPartId) {
-                    const partRef = doc(db, "stories", storyId, "parts", editingPartId);
-                    await updateDoc(partRef, {
-                        partNumber,
-                        title: title || '',
-                        blocks: blocks
-                    });
-                    alert('পার্ট সফলভাবে আপডেট করা হয়েছে!');
-                } else {
-                    await addDoc(collection(db, "stories", storyId, "parts"), {
-                        partNumber,
-                        title: title || '',
-                        blocks: blocks,
-                        likes: 0,
-                        comments: [],
-                        createdAt: new Date()
-                    });
-                    alert('সফলভাবে নতুন পার্ট পোস্ট করা হয়েছে!');
-                }
-                window.loadAdminDashboard();
-            } catch(e) {
-                alert('ত্রুটি: ' + e.message);
-            }
+        window.copyVideoPageLink = function() {
+            const videoUrl = `${window.location.origin}${window.location.pathname}?video_page=true`;
+            navigator.clipboard.writeText(videoUrl).then(() => {
+                alert("ভিডিও ল্যান্ডিং পেজের শেয়ারিং লিংক কপি করা হয়েছে!\n\nলিংক: " + videoUrl);
+            }).catch(err => alert("লগইন বা কপি করতে সমস্যা হয়েছে"));
         }
     </script>
 </body>
